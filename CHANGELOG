@@ -8,6 +8,6 @@ CHANGELOG
 
 "pressure gauge.vi" written on June 27, 2018 by Dillon Wong.  Version 1.0.0
 
-"arduino_controller.ino" and "arduino_interface.py" written on April 8, 2018 by Dillon Wong.  Version 1.0.0
+"arduino_controller.ino" and "arduino_interface.py" written on April 8, 2018 by Dillon Wong for Python 2.7.  Version 1.0.0
 
-"sr830_lockin.py" written on April 6, 2018 by Dillon Wong.  Version 1.0.0
+"sr830_lockin.py" written on April 6, 2018 by Dillon Wong for Python 2.7.  Version 1.0.0
