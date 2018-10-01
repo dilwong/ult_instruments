@@ -1,5 +1,7 @@
-"pressure gauge.vi" is a LabVIEW routine for reading and graphing pressure values from an Agilent XGS-600 controller.
+"pressure gauge.vi" is a LabVIEW routine for reading and graphing pressure values from an Agilent XGS-600 controller (through RS-232 serial communication).
 
 "walk tester.vi" is a LABVIEW routine for testing a Pan-type STM walker using the Nanonis Programming Interface.
 
-"current monitor.vi" is a LABVIEW routine for plotting the tunnel current and saving the associated power spectral density as ASCII files.
+"current monitor.vi" is a LABVIEW routine for plotting the tunnel current and saving the associated power spectral density as ASCII files.  This uses the Nanonis Programming Interface.
+
+"alicat gas monitor.vi" is a LABVIEW routine for plotting pressure on an Alicat gas flow meter vs time, recording the data in an ASCII file.  The pressure values are acquired via RS-232 serial communication through an 8 pin mini-DIN/9 pin D-sub cable.
