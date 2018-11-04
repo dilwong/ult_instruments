@@ -3,8 +3,8 @@
 #will shut down the Keithley that controls the fixed impedance
 #heater.
 
-import keithley2400 as keithley
-import triton_temperature as triton
+import ult_instruments.Python.keithley2400 as keithley
+import ult_instruments.Python.triton_temperature as triton
 import thread
 import time
 import datetime
