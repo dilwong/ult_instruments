@@ -14,6 +14,32 @@ def set_voltage(num):
     else:
         print 'For safety, I cannot allow voltages greater than 15 V.'
 
+def set_voltage_gradual(num):
+    if -15 <= num <= 15:
+        loop_flag = 1
+        while loop_flag:
+            keithley.write(':READ?\n')
+            meas_array = keithley.readline()
+            voltage = float(meas_array.split(',')[0])
+            if abs(num - voltage) < 1:
+                set_voltage(num)
+                read_voltage()
+                read_current()
+                print 'DONE'
+                loop_flag = 0
+            elif voltage > num:
+                set_voltage(voltage - 0.1)
+                read_voltage()
+                read_current()
+                #time.sleep(0.01)
+            elif voltage < num:
+                set_voltage(voltage + 0.1)
+                read_voltage()
+                read_current()
+                #time.sleep(0.01)
+    else:
+        print 'For safety, I cannot allow voltages greater than 15 V.'
+
 def read_voltage():
     keithley.write(':READ?\n')
     meas_array = keithley.readline()

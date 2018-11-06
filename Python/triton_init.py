@@ -12,10 +12,13 @@ import datetime
 #Ask user for Triton IP address and port.
 #Should change to scrub inputs.
 IP_address = raw_input('Enter TRITON IP address:')
-port = raw_input('Enter port number:')
-port = int(port)
+port = int(raw_input('Enter port number:'))
 
-t_limit = 4
+#Set maximum temperatures
+onek_limit = float(raw_input('Enter MAXIMUM 1K pot temperature: '))
+sorb_limit = float(raw_input('Enter MAXIMUM sorb temperature: '))
+needle_limit = float(raw_input('Enter MAXIMUM needle valve temperature: '))
+
 triton_flag = 1
 def triton_temperature_loop(IP_address, port):
     off_flag = 1
@@ -31,7 +34,7 @@ def triton_temperature_loop(IP_address, port):
         keithley.read_current()
         print 'Set triton_flag to 0 to QUIT'
         if off_flag == 1:
-            if (onek_pot_temperature > t_limit) or (sorb_temperature > t_limit) or (needle_valve_temperature > t_limit):
+            if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit):
                 print 'WARNING: TEMPERATURES HAVE EXCEEDED LIMIT'
                 print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
                 keithley.run_to_zero()
