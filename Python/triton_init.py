@@ -11,8 +11,14 @@ import datetime
 
 #Ask user for Triton IP address and port.
 #Should change to scrub inputs.
-IP_address = raw_input('Enter TRITON IP address:')
-port = int(raw_input('Enter port number:'))
+try:
+    IP_address
+except NameError:
+    IP_address = raw_input('Enter TRITON IP address:')
+try:
+    port
+except NameError:
+    port = int(raw_input('Enter port number:'))
 
 #Set maximum temperatures
 onek_limit = float(raw_input('Enter MAXIMUM 1K pot temperature: '))
@@ -30,9 +36,10 @@ def triton_temperature_loop(IP_address, port):
         print '1K pot: ' + str(onek_pot_temperature) + ' K'
         print 'Sorb: ' + str(sorb_temperature) + ' K'
         print 'Needle valve: ' + str(needle_valve_temperature) + ' K'
-        keithley.read_voltage()
-        keithley.read_current()
-        print 'Set triton_flag to 0 to QUIT'
+        if off_flag != 0:
+            print 'VOLTAGE: ' + str(keithley.read_voltage()) + ' V'
+            print 'CURRENT: ' + str(keithley.read_current()) + ' uA'
+        print 'Run "triton_stop()" to QUIT'
         if off_flag == 1:
             if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit):
                 print 'WARNING: TEMPERATURES HAVE EXCEEDED LIMIT'
@@ -43,5 +50,9 @@ def triton_temperature_loop(IP_address, port):
             print 'IMPEDANCE HEATER IS OFF'
         print ''
         time.sleep(5)
+
+def triton_stop():
+    global triton_flag
+    triton_flag = 0
 
 thread.start_new_thread(triton_temperature_loop,(IP_address, port))
