@@ -8,6 +8,7 @@ import ult_instruments.Python.triton_temperature as triton
 import thread
 import time
 import datetime
+import ult_instruments.Python.triton_pressure as dilution_pressure
 
 #Ask user for Triton IP address and port.
 #Should change to scrub inputs.
@@ -44,15 +45,22 @@ def triton_temperature_loop(IP_address, port):
             if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit):
                 print 'WARNING: TEMPERATURES HAVE EXCEEDED LIMIT'
                 print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
+                print '\a'
                 keithley.run_to_zero()
+                off_datetime = str(datetime.datetime.now())
                 off_flag = 0
         elif off_flag == 0:
-            print 'IMPEDANCE HEATER IS OFF'
+            print 'IMPEDANCE HEATER IS OFF SINCE ' + off_datetime
+            print '\a'
         print ''
         time.sleep(5)
 
 def triton_stop():
     global triton_flag
+    global keithley_emergency_lock
+    global keithley_lock
+    keithley_emergency_lock = 0
+    keithley_lock = 0
     triton_flag = 0
 
 thread.start_new_thread(triton_temperature_loop,(IP_address, port))
