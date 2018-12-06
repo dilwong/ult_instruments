@@ -1,6 +1,6 @@
 #Wrapper for GPIB control of SR830 Lock-In amplifier
 #
-#Available functions:
+#Available methods:
 #set_amplitude(FLOAT), get_amplitude()
 #set_frequency(FLOAT), get_frequency()
 #set_harmonic(INT), get_harmonic()
@@ -18,11 +18,10 @@ import visa
 class lockin:
 
     #The primary address is assumed to be 8
-    address = 8
-    primary_id = 'GPIB0::'+str(address)+'::INSTR'
+    def __init__(self, address = 8):
+        self.primary_id = 'GPIB0::'+str(address)+'::INSTR'
 
     #Sets amplitude
-    @classmethod
     def set_amplitude(self,ampl):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -37,7 +36,6 @@ class lockin:
         rm.close()
 
     #Gets amplitude
-    @classmethod
     def get_amplitude(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -47,7 +45,6 @@ class lockin:
         rm.close()
 
     #Sets frequency
-    @classmethod
     def set_frequency(self,freq):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -60,7 +57,6 @@ class lockin:
         rm.close()
 
     #Gets frequency
-    @classmethod
     def get_frequency(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -70,7 +66,6 @@ class lockin:
         rm.close()
 
     #Sets harmonic
-    @classmethod
     def set_harmonic(self,harm):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -86,7 +81,6 @@ class lockin:
         rm.close()
 
     #Gets harmonic
-    @classmethod
     def get_harmonic(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -96,7 +90,6 @@ class lockin:
         rm.close()
 
     #Set phase
-    @classmethod
     def set_phase(self,phase):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -110,7 +103,6 @@ class lockin:
         rm.close()
 
     #Gets phase
-    @classmethod
     def get_phase(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -120,7 +112,6 @@ class lockin:
         rm.close()
 
     #Autophase
-    @classmethod
     def autophase(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -130,7 +121,6 @@ class lockin:
         rm.close()
 
     #Add to phase
-    @classmethod
     def add_to_phase(self,add):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -142,7 +132,6 @@ class lockin:
         rm.close()
 
     #Autogain
-    @classmethod
     def autogain(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -152,7 +141,6 @@ class lockin:
         rm.close()
 
     #Set time constant
-    @classmethod
     def set_timeconstant(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -175,7 +163,6 @@ class lockin:
         rm.close
 
     #Get time constant
-    @classmethod
     def get_timeconstant(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -206,7 +193,6 @@ class lockin:
         rm.close
 
     #Set sensitivity
-    @classmethod
     def set_sensitivity(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
@@ -233,7 +219,6 @@ class lockin:
         rm.close
 
     #Get time constant
-    @classmethod
     def get_sensitivity(self):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():

@@ -3,12 +3,18 @@
 #will shut down the Keithley that controls the fixed impedance
 #heater.
 
-import ult_instruments.Python.keithley2400 as keithley
-import ult_instruments.Python.triton_temperature as triton
 import thread
 import time
 import datetime
+
+import ult_instruments.Python.triton_temperature as triton
 import ult_instruments.Python.triton_pressure as dilution_pressure
+
+import ult_instruments.Python.keithley2400
+try:
+    keithley
+except NameError:
+    keithley = ult_instruments.Python.keithley2400.keithley()
 
 #Ask user for Triton IP address and port.
 #Should change to scrub inputs.
@@ -42,6 +48,8 @@ def triton_temperature_loop(IP_address, port):
             print 'CURRENT: ' + str(keithley.read_current()) + ' uA'
         print 'Run "triton_stop()" to QUIT'
         if off_flag == 1:
+            #Needs to also check pressure.
+            #Also need physical fail-safe to kill Keithley power if program crashes.
             if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit):
                 print 'WARNING: TEMPERATURES HAVE EXCEEDED LIMIT'
                 print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
@@ -57,10 +65,8 @@ def triton_temperature_loop(IP_address, port):
 
 def triton_stop():
     global triton_flag
-    global keithley_emergency_lock
-    global keithley_lock
-    keithley_emergency_lock = 0
-    keithley_lock = 0
+    keithley.keithley_emergency_lock = 0
+    keithley.keithley_lock = 0
     triton_flag = 0
 
 thread.start_new_thread(triton_temperature_loop,(IP_address, port))

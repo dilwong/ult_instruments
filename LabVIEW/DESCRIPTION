@@ -4,6 +4,6 @@
 
 "current monitor.vi" is a LabVIEW routine for plotting the tunnel current and saving the associated power spectral density as ASCII files.  This uses the Nanonis Programming Interface.
 
-"alicat gas monitor.vi" is a LabVIEW routine for plotting pressure on an Alicat gas flow meter vs time, recording the data in an ASCII file.  The pressure values are acquired via RS-232 serial communication through an 8 pin mini-DIN/9 pin D-sub cable.
+"alicat gas monitor.vi" is a LabVIEW routine for plotting pressure on an Alicat gas flow meter vs time, recording the data in an ASCII file.  The pressure values are acquired via RS-232 serial communication through an 8 pin mini-DIN/9 pin D-sub cable.  Needs null modem.
 
-"ion pump controller.vi" is a LabVIEW routine for reading and graphing pressure values from a Gamma Vacuum DIGITEL QPC ion pump controller (through RS-232 serial communication).
+"ion pump controller.vi" is a LabVIEW routine for reading and graphing pressure values from a Gamma Vacuum DIGITEL QPC ion pump controller (through RS-232 serial communication).  Needs null modem.
