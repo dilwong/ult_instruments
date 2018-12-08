@@ -13,132 +13,99 @@
 #set_sensitivity()
 #get_sensitivity()
 
+#NOT IMPLEMENTED YET:
+#self.read/write("ISRC(?) {i}") where i=0 gives A, i=1 gives A-B
+#self.read/write("DDEF(?) i,{j,k}") where i=1 for channel 1 & i=2 for channel 2
+#                                   where j=0 for X/Y & j=1 for R/THETA
+#                                   and k=0
+
 import visa
 
 class lockin:
 
     #The primary address is assumed to be 8
-    def __init__(self, address = 8):
-        self.primary_id = 'GPIB0::'+str(address)+'::INSTR'
+    def __init__(self, address = 8, gpib_num = 1):
+        self.primary_id = 'GPIB' + str(gpib_num) + '::' +str(address) +'::INSTR'
 
-    #Sets amplitude
-    def set_amplitude(self,ampl):
+    def write(self, message):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
             inst = rm.open_resource(self.primary_id)
-            if 0 <= ampl <= 0.005:
-                inst.write('SLVL 0.004')
-            elif 0.005 < ampl <= 5:
-                inst.write('SLVL ' + str(ampl))
-            else:
-                print 'ERROR: Amplitude out of bounds.'
+            inst.write(message)
             inst.close()
         rm.close()
+
+    def read(self, message):
+        rm = visa.ResourceManager()
+        if self.primary_id in rm.list_resources():
+            inst = rm.open_resource(self.primary_id)
+            answer = inst.query(message)
+            inst.close()
+        rm.close()
+        return answer
+
+    #Sets amplitude
+    def set_amplitude(self, ampl):
+        if 0 <= ampl <= 0.005:
+            self.write('SLVL 0.004')
+        elif 0.005 < ampl <= 5:
+            self.write('SLVL ' + str(ampl))
+        else:
+            print 'ERROR: Amplitude out of bounds.'
 
     #Gets amplitude
     def get_amplitude(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            print float(inst.query('SLVL ?'))
-            inst.close()
-        rm.close()
+        return float(self.read('SLVL ?'))
 
     #Sets frequency
-    def set_frequency(self,freq):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            if 0.001 < freq <= 102000:
-                inst.write('FREQ ' + str(freq))
-            else:
-                print 'ERROR: Frequency out of bounds.'
-            inst.close()
-        rm.close()
+    def set_frequency(self, freq):
+        if 0.001 < freq <= 102000:
+            self.write('FREQ ' + str(freq))
+        else:
+            print 'ERROR: Frequency out of bounds.'
 
     #Gets frequency
     def get_frequency(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            print float(inst.query('FREQ ?'))
-            inst.close()
-        rm.close()
+        return float(self.read('FREQ ?'))
 
     #Sets harmonic
-    def set_harmonic(self,harm):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            if isinstance(harm,int):
-                if 1 <= harm <= 19999:
-                    inst.write('HARM ' + str(harm))
-                else:
-                    print 'ERROR: Harmonic out of bounds.'
+    def set_harmonic(self, harm):
+        if isinstance(harm,int):
+            if 1 <= harm <= 19999:
+                self.write('HARM ' + str(harm))
             else:
-                print 'ERROR: Harmonic not an integer.'
-            inst.close()
-        rm.close()
+                print 'ERROR: Harmonic out of bounds.'
+        else:
+            print 'ERROR: Harmonic not an integer.'
 
     #Gets harmonic
     def get_harmonic(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            print int(inst.query('HARM ?'))
-            inst.close()
-        rm.close()
+        return int(self.read('HARM ?'))
 
     #Set phase
     def set_phase(self,phase):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            if -360 <= phase <= 729.99:
-                inst.write('PHAS ' + str(phase))
-            else:
-                print 'ERROR: Phase out of bounds.'
-
-            inst.close()
-        rm.close()
+        if -360 <= phase <= 729.99:
+            self.write('PHAS ' + str(phase))
+        else:
+            print 'ERROR: Phase out of bounds.'
 
     #Gets phase
     def get_phase(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            print float(inst.query('PHAS ?'))
-            inst.close()
-        rm.close()
+        return float(self.read('PHAS ?'))
 
     #Autophase
     def autophase(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            inst.write('APHS')
-            inst.close()
-        rm.close()
+        self.write('APHS')
 
     #Add to phase
     def add_to_phase(self,add):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            if isinstance(add, (int, long, float)):
-                inst = rm.open_resource(self.primary_id)
-                new_phase = (float(inst.query('PHAS ?')) + add) % 360
-                inst.write('PHAS ' + str(new_phase))
-                inst.close()
-        rm.close()
+        if isinstance(add, (int, long, float)):
+            new_phase = (self.get_phase() + add) % 360
+            self.set_phase(new_phase)
 
     #Autogain
     def autogain(self):
-        rm = visa.ResourceManager()
-        if self.primary_id in rm.list_resources():
-            inst = rm.open_resource(self.primary_id)
-            inst.write('AGAN')
-            inst.close()
-        rm.close()
+        self.write('AGAN')
 
     #Set time constant
     def set_timeconstant(self):
