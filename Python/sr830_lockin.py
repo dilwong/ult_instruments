@@ -83,7 +83,7 @@ class lockin:
         return int(self.read('HARM ?'))
 
     #Set phase
-    def set_phase(self,phase):
+    def set_phase(self, phase):
         if -360 <= phase <= 729.99:
             self.write('PHAS ' + str(phase))
         else:
@@ -98,7 +98,7 @@ class lockin:
         self.write('APHS')
 
     #Add to phase
-    def add_to_phase(self,add):
+    def add_to_phase(self, add):
         if isinstance(add, (int, long, float)):
             new_phase = (self.get_phase() + add) % 360
             self.set_phase(new_phase)
