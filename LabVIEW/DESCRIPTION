@@ -7,3 +7,5 @@
 "alicat gas monitor.vi" is a LabVIEW routine for plotting pressure on an Alicat gas flow meter vs time, recording the data in an ASCII file.  The pressure values are acquired via RS-232 serial communication through an 8 pin mini-DIN/9 pin D-sub cable.  Needs null modem.
 
 "ion pump controller.vi" is a LabVIEW routine for reading and graphing pressure values from a Gamma Vacuum DIGITEL QPC ion pump controller (through RS-232 serial communication).  Needs null modem.
+
+"dilution walker.vi" is a LabVIEW routine for walking a slip-stick piezo motor using the Nanonis Programming Interface.  It monitors the temperature of the mixing chamber of an Oxford Instruments dilution refrigerator so that the motor only runs below a set temperature limit.
