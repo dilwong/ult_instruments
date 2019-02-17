@@ -7,7 +7,7 @@
 import serial
 import time
 
-class keithley:
+class keithley2400:
 
     def __init__(self, com_port = 'COM3'):
         self.keithley = serial.Serial(com_port, 9600, timeout = 1)
@@ -65,10 +65,17 @@ class keithley:
                     time.sleep(0.01)
 
     def force_read_voltage(self):
-        self.keithley.write(':READ?\n')
-        meas_array = self.keithley.readline()
-        voltage = float(meas_array.split(',')[0])
-        self.keithley.write(':SYST:KEY 23\n')
+        while True:
+            try:
+                self.keithley.write('\n')
+                self.keithley.write(':READ?\n')
+                meas_array = self.keithley.readline()
+                voltage = float(meas_array.split(',')[0])
+                self.keithley.write(':SYST:KEY 23\n')
+                break
+            except ValueError:
+                print 'HEADER ERROR DETECTED: ' + meas_array
+                time.sleep(1)
         return voltage
 
     def read_voltage(self):
@@ -81,10 +88,17 @@ class keithley:
         return voltage
 
     def force_read_current(self):
-        self.keithley.write(':READ?\n')
-        meas_array = self.keithley.readline()
-        current = float(meas_array.split(',')[1])*1E6
-        self.keithley.write(':SYST:KEY 23\n')
+        while True:
+            try:
+                self.keithley.write('\n')
+                self.keithley.write(':READ?\n')
+                meas_array = self.keithley.readline()
+                current = float(meas_array.split(',')[1])*1E6
+                self.keithley.write(':SYST:KEY 23\n')
+                break
+            except ValueError:
+                print 'HEADER ERROR DETECTED: ' + meas_array
+                time.sleep(1)
         return current
 
     def read_current(self):

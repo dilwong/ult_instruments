@@ -7,14 +7,14 @@ import thread
 import time
 import datetime
 
-import ult_instruments.Python.triton_temperature as triton
+import ult_instruments.Python.triton_temperature as dilution_temperature
 import ult_instruments.Python.triton_pressure as dilution_pressure
 
 import ult_instruments.Python.keithley2400
 try:
-    keithley
+    heater_keithley
 except NameError:
-    keithley = ult_instruments.Python.keithley2400.keithley()
+    heater_keithley = ult_instruments.Python.keithley2400.keithley2400()
 
 #Ask user for Triton IP address and port.
 #Should change to scrub inputs.
@@ -37,15 +37,15 @@ def triton_temperature_loop(IP_address, port):
     off_flag = 1
     while triton_flag:
         print datetime.datetime.now()
-        onek_pot_temperature = triton.onek_pot(IP_address, port)
-        sorb_temperature = triton.sorb(IP_address, port)
-        needle_valve_temperature = triton.needle_valve(IP_address, port)
+        onek_pot_temperature = dilution_temperature.onek_pot(IP_address, port)
+        sorb_temperature = dilution_temperature.sorb(IP_address, port)
+        needle_valve_temperature = dilution_temperature.needle_valve(IP_address, port)
         print '1K pot: ' + str(onek_pot_temperature) + ' K'
         print 'Sorb: ' + str(sorb_temperature) + ' K'
         print 'Needle valve: ' + str(needle_valve_temperature) + ' K'
         if off_flag != 0:
-            print 'VOLTAGE: ' + str(keithley.read_voltage()) + ' V'
-            print 'CURRENT: ' + str(keithley.read_current()) + ' uA'
+            print 'VOLTAGE: ' + str(heater_keithley.read_voltage()) + ' V'
+            print 'CURRENT: ' + str(heater_keithley.read_current()) + ' uA'
         print 'Run "triton_stop()" to QUIT'
         if off_flag == 1:
             #Needs to also check pressure.
@@ -54,7 +54,7 @@ def triton_temperature_loop(IP_address, port):
                 print 'WARNING: TEMPERATURES HAVE EXCEEDED LIMIT'
                 print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
                 print '\a'
-                keithley.run_to_zero()
+                heater_keithley.run_to_zero()
                 off_datetime = str(datetime.datetime.now())
                 off_flag = 0
         elif off_flag == 0:
@@ -65,8 +65,8 @@ def triton_temperature_loop(IP_address, port):
 
 def triton_stop():
     global triton_flag
-    keithley.keithley_emergency_lock = 0
-    keithley.keithley_lock = 0
+    heater_keithley.keithley_emergency_lock = 0
+    heater_keithley.keithley_lock = 0
     triton_flag = 0
 
 thread.start_new_thread(triton_temperature_loop,(IP_address, port))
