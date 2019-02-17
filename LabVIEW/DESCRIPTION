@@ -9,3 +9,5 @@
 "ion pump controller.vi" is a LabVIEW routine for reading and graphing pressure values from a Gamma Vacuum DIGITEL QPC ion pump controller (through RS-232 serial communication).  Needs null modem.
 
 "dilution walker.vi" is a LabVIEW routine for walking a slip-stick piezo motor using the Nanonis Programming Interface.  It monitors the temperature of the mixing chamber of an Oxford Instruments dilution refrigerator so that the motor only runs below a set temperature limit.
+
+"capacitance navigation.vi" and "raster navigation.vi" are LabVIEW routines for navigating samples using the scanning capacitance method.
