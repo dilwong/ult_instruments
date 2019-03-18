@@ -13,3 +13,7 @@
 "capacitance navigation.vi" and "raster navigation.vi" are LabVIEW routines for navigating samples using the scanning capacitance method.
 
 "gate_controller.vi" is a LabVIEW routine for controlling a Keithley 2450 SourceMeter by communicating with python through sockets.
+
+"gate increment.vi" is a LabVIEW routine for incrementing the gate voltage on a Keithley 2450 SourceMeter.  It is a wrapper for "gate_controller.vi".
+
+"gate sts.vi" is a LabView routine for acquiring Bias Spectroscopy though the Nanonis Programming Interface while incrementing the gate voltage via "gate increment.vi".  
