@@ -39,7 +39,7 @@ def stm_cx(IP_address, port):
 def read_triton_temperature(IP_address, port, message):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((IP_address, port))
-    s.send(message)
-    response = s.recv(4096)
+    s.send(message.encode())
+    response = str(s.recv(4096).decode())
     s.close()
     return float(response.split(':')[6][:-2])
