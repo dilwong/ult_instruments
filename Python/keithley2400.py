@@ -73,7 +73,7 @@ class keithley2400:
                 voltage = float(meas_array.split(',')[0])
                 self.keithley.write(':SYST:KEY 23\n')
                 break
-            except ValueError:
+            except (ValueError, IndexError):
                 print 'HEADER ERROR DETECTED: ' + meas_array
                 time.sleep(1)
         return voltage
@@ -96,7 +96,7 @@ class keithley2400:
                 current = float(meas_array.split(',')[1])*1E6
                 self.keithley.write(':SYST:KEY 23\n')
                 break
-            except ValueError:
+            except (ValueError, IndexError):
                 print 'HEADER ERROR DETECTED: ' + meas_array
                 time.sleep(1)
         return current
