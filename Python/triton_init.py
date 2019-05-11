@@ -111,6 +111,11 @@ def triton_temperature_loop(IP_address, port):
                 elif arg_command == 'Triton_Stop':
                     conn.sendall('Done\n')
                     triton_stop()
+                elif arg_command == 'Triton_Status':
+                    if off_flag == 1:
+                        conn.sendall('RUNNING\n')
+                    elif off_flag == 0:
+                        conn.sendall('STOPPED\n')
                 else:
                     conn.sendall('Invalid Command\n')
                 listen_string = '_ 0'
@@ -137,6 +142,8 @@ def triton_temperature_loop(IP_address, port):
                 print 'Run "triton_stop()" to QUIT'
                 if off_flag == 1:
                     #Also need physical fail-safe to kill Keithley power if program crashes.
+                    if (sorb_temperature > 1.8): #SORB ALARM
+                        print '\a'
                     if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit) or (still_pressure > still_limit):
                         print 'WARNING: A TEMPERATURE OR PRESSURE HAS EXCEEDED LIMIT'
                         print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
