@@ -24,7 +24,7 @@ import visa
 class lockin:
 
     #The primary address is assumed to be 8
-    def __init__(self, address = 8, gpib_num = 1):
+    def __init__(self, address = 8, gpib_num = 0):
         self.primary_id = 'GPIB' + str(gpib_num) + '::' +str(address) +'::INSTR'
 
     def write(self, message):

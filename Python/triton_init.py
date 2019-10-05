@@ -10,6 +10,10 @@ import time
 import datetime
 import traceback
 import socket
+from colorama import Fore
+import json
+
+import winsound
 
 import ult_instruments.Python.triton_temperature as dilution_temperature
 import ult_instruments.Python.triton_pressure as dilution_pressure
@@ -72,6 +76,7 @@ def triton_temperature_loop(IP_address, port):
     global conn
     global listen_string
     thread.start_new_thread(triton_listen,(IP_address, port))
+    temp_color_text = ''
     try:
         off_flag = 1
         except_num = 0
@@ -124,7 +129,8 @@ def triton_temperature_loop(IP_address, port):
                 print 'COMMAND COMPLETE'
             try:
                 time.sleep(1)
-                print datetime.datetime.now()
+                datetime_string = str(datetime.datetime.now())
+                print temp_color_text + datetime_string
                 onek_pot_temperature = dilution_temperature.onek_pot(IP_address, port)
                 time.sleep(1)
                 sorb_temperature = dilution_temperature.sorb(IP_address, port)
@@ -136,24 +142,36 @@ def triton_temperature_loop(IP_address, port):
                 print 'Sorb: ' + str(sorb_temperature) + ' K'
                 print 'Needle valve: ' + str(needle_valve_temperature) + ' K'
                 print 'Still: ' + str(still_pressure) + ' mbar'
+                json_log_object = {'time':datetime_string, 'pot_temp':onek_pot_temperature, 'sorb_temp':sorb_temperature, 'needle_valve_temp':needle_valve_temperature, 'still_pressure':still_pressure}
+                json_log_object['heater_off_status'] = 1
                 if off_flag != 0:
-                    print 'VOLTAGE: ' + str(heater_keithley.read_voltage()) + ' V'
-                    print 'CURRENT: ' + str(heater_keithley.read_current()) + ' uA'
+                    heater_voltage = heater_keithley.read_voltage()
+                    heater_current = heater_keithley.read_current()
+                    print 'VOLTAGE: ' + str(heater_voltage) + ' V'
+                    print 'CURRENT: ' + str(heater_current) + ' uA'
+                    json_log_object['heater_voltage'] = heater_voltage
+                    json_log_object['heater_current'] = heater_current
+                    json_log_object['heater_off_status'] = 0
                 print 'Run "triton_stop()" to QUIT'
+                with open(logpath,'a+') as logpathfile:
+                    json.dump(json_log_object,logpathfile)
+                    logpathfile.write(',\n')
                 if off_flag == 1:
                     #Also need physical fail-safe to kill Keithley power if program crashes.
                     if (sorb_temperature > 1.8): #SORB ALARM
-                        print '\a'
+                        annoying_sound()
+                        temp_color_text = Fore.RED
                     if (onek_pot_temperature > onek_limit) or (sorb_temperature > sorb_limit) or (needle_valve_temperature > needle_limit) or (still_pressure > still_limit):
                         print 'WARNING: A TEMPERATURE OR PRESSURE HAS EXCEEDED LIMIT'
                         print 'BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER'
-                        print '\a'
+                        annoying_sound()
+                        temp_color_text = Fore.RED
                         heater_keithley.run_to_zero()
                         off_datetime = str(datetime.datetime.now())
                         off_flag = 0
                 elif off_flag == 0:
                     print 'IMPEDANCE HEATER IS OFF SINCE ' + off_datetime
-                    print '\a'
+                    annoying_sound()
                 print ''
                 time.sleep(1)
                 except_num = 0
@@ -184,5 +202,20 @@ def triton_stop():
     s.sendall('QUIT')
     s.close()
     print 'TRITON LOOP NOW STOPPED'
+
+def annoying_sound():
+    soundC=523
+    soundD=587
+    soundE=659
+    soundF=698
+    soundG=784
+    winsound.Beep(soundD,200)
+    winsound.Beep(soundC,100)
+    time.sleep(0.1)
+    winsound.Beep(soundD,200)
+    winsound.Beep(soundC,50)
+    winsound.Beep(soundD,200)
+    winsound.Beep(soundC,50)
+    winsound.Beep(soundF,300)
 
 thread.start_new_thread(triton_temperature_loop,(IP_address, port))
