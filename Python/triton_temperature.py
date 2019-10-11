@@ -1,3 +1,7 @@
+####  This module is obsolete.  Use triton_monitor.py instead.  ####
+
+
+
 #triton_temperature.py
 #Reads temperatures from Triton
 #Dillon Wong 11/03/2018

@@ -1,3 +1,7 @@
+####  This module is obsolete.  Use triton_monitor.py instead.  ####
+
+
+
 #triton_pressure.py
 #Reads pressures from Triton
 #Dillon Wong 11/07/2018

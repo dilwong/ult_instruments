@@ -1,3 +1,7 @@
+####  This program is obsolete.  Use impedance_heater.py instead.  ####
+
+
+
 #This program monitors the 1K pot, sorb, and needle valve
 #temperatures.  If the temperatures are too high, the program
 #will shut down the Keithley that controls the fixed impedance

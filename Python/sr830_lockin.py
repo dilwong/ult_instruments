@@ -19,6 +19,9 @@
 #                                   where j=0 for X/Y & j=1 for R/THETA
 #                                   and k=0
 
+#Python 2.7 only
+#TO DO: Python 3 compatibility
+
 import visa
 
 class lockin:

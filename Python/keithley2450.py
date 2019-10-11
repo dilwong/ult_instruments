@@ -3,6 +3,9 @@
 #Uses Keithley's Test Script Processor, an Lua interpreter
 #Sets to source voltage and measure current
 
+#Python 2.7 only
+#TO DO: Python 3 compatibility
+
 import visa
 import time
 import thread
