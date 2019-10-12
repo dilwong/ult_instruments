@@ -61,6 +61,7 @@ class keithley2400:
             self.lock.release()
 
     def force_read_voltage(self):
+        counter = 0
         while True:
             try:
                 self.keithley.write('\n')
@@ -71,6 +72,11 @@ class keithley2400:
                 break
             except (ValueError, IndexError):
                 print('HEADER ERROR DETECTED: ' + meas_array)
+                if counter > 100:
+                    self.force_set_voltage(0)
+                    print('EMERGENCY SET VOLTAGE TO 0 V')
+                    break
+                counter += 1
                 time.sleep(1)
         return voltage
 
@@ -84,6 +90,7 @@ class keithley2400:
             self.lock.release()
 
     def force_read_current(self):
+        counter = 0
         while True:
             try:
                 self.keithley.write('\n')
@@ -94,6 +101,11 @@ class keithley2400:
                 break
             except (ValueError, IndexError):
                 print('HEADER ERROR DETECTED: ' + meas_array)
+                if counter > 100:
+                    self.force_set_voltage(0)
+                    print('EMERGENCY SET VOLTAGE TO 0 V')
+                    break
+                counter += 1
                 time.sleep(1)
         return current
 
@@ -112,9 +124,7 @@ class keithley2400:
         self.lock.acquire()
         try:
             time.sleep(0.1)
-            self.keithley.write(':READ?\n')
-            meas_array = self.keithley.readline()
-            voltage = float(meas_array.split(',')[0])
+            voltage = self.force_read_voltage()
             while not (-0.00001 < voltage < 0.00001):
                 if -1 < voltage < 1:
                     self.force_set_voltage(0)
@@ -124,9 +134,7 @@ class keithley2400:
                 elif voltage <= -1:
                     self.force_set_voltage(voltage + 0.1)
                     time.sleep(0.01)
-                self.keithley.write(':READ?\n')
-                meas_array = self.keithley.readline()
-                voltage = float(meas_array.split(',')[0])
+                voltage = self.force_read_voltage()
             self.keithley.write(':SYST:KEY 23\n')
             print('Run to 0 V complete.')
             print('Keithley SourceMeter output is now 0 V.')

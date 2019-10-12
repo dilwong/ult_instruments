@@ -31,10 +31,12 @@ class impedance_heater:
         self.queue = Queue.Queue()
         self.lock = thread.allocate_lock()
         self.exception_list = []
+        self.stall_procedure = None
+        self.stall_arguments = []
         thread.start_new_thread(self.listen, ())
         thread.start_new_thread(self.execute, ())
 
-    def start(self, stall_function = None):
+    def start(self):
         if self.__class__.running:
             print("ERROR: ALREADY RUNNING")
             return
@@ -47,9 +49,10 @@ class impedance_heater:
         self.sorb_limit = float(raw_input('Enter MAXIMUM sorb temperature (K): '))
         self.needle_limit = float(raw_input('Enter MAXIMUM needle valve temperature (K): '))
         self.still_limit = float(raw_input('Enter MAXIMUM still pressure (mbar):'))
-        thread.start_new_thread(self.loop, (stall_function, ))
+        self.stored_heater_voltage = None
+        thread.start_new_thread(self.loop, ())
 
-    def loop(self, stall_function):
+    def loop(self):
         while not self.stop:
             try:
                 time.sleep(1)
@@ -68,7 +71,11 @@ class impedance_heater:
                     print('Sorb: ' + str(sorb_temperature) + ' K')
                     print('Needle valve: ' + str(needle_valve_temperature) + ' K')
                     print('Still: ' + str(still_pressure) + ' mbar')
-                    json_log_object = {'time':datetime_string, 'pot_temp':onek_pot_temperature, 'sorb_temp':sorb_temperature, 'needle_valve_temp':needle_valve_temperature, 'still_pressure':still_pressure}
+                    json_log_object = {'time':datetime_string, \
+                        'pot_temp':onek_pot_temperature, \
+                        'sorb_temp':sorb_temperature, \
+                        'needle_valve_temp':needle_valve_temperature, \
+                        'still_pressure':still_pressure}
                     json_log_object['heater_not_stalled'] = 1
                     if not self.__class__.stalled:
                         heater_voltage = self.heater_keithley.read_voltage()
@@ -86,15 +93,20 @@ class impedance_heater:
                     if not self.__class__.stalled:
                         if (sorb_temperature > 1.8): #SORB ALARM
                             self.annoying_sound()
-                        if (onek_pot_temperature > self.onek_limit) or (sorb_temperature > self.sorb_limit) or (needle_valve_temperature > self.needle_limit) or (still_pressure > self.still_limit):
+                        if (onek_pot_temperature > self.onek_limit) or \
+                                (sorb_temperature > self.sorb_limit) or \
+                                (needle_valve_temperature > self.needle_limit) \
+                                or (still_pressure > self.still_limit):
                             self.__class__.stalled = True
                             self.annoying_sound()
+                            self.stored_heater_voltage = heater_voltage
                             print('WARNING: A TEMPERATURE OR PRESSURE HAS EXCEEDED LIMIT')
                             print('BEGIN EMERGENCY SHUT DOWN OF IMPEDANCE HEATER')
-                            self.heater_keithley.run_to_zero()
                             off_datetime = str(datetime.datetime.now())
-                            if stall_function is not None:
-                                thread.start_new_thread(stall_function[0],stall_function[1])
+                            self.heater_keithley.run_to_zero()
+                            if self.stall_procedure is not None:
+                                stall_arguments_tuple = (self, ) + tuple(self.stall_arguments)
+                                thread.start_new_thread(self.stall_procedure, stall_arguments_tuple)
                     else:
                         print('IMPEDANCE HEATER IS OFF SINCE ' + off_datetime)
                         self.annoying_sound()
@@ -225,3 +237,73 @@ class impedance_heater:
         winsound.Beep(soundD,200)
         winsound.Beep(soundC,50)
         winsound.Beep(soundF,300)
+
+# Example of a stall procedure
+# Needs to be tested extensively!!!
+def restart_heater(impedance_heater):
+    # STAGE 1
+    print("'RESTART HEATER' STAGE 1")
+    first_stage_wait_minutes = 10
+    time.sleep(first_stage_wait_minutes * 60)
+    if impedance_heater.__class__.running == False:
+        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
+        impedance_heater.heater_keithley.run_to_zero()
+        return
+    if impedance_heater.__class__.stalled == False:
+        print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
+        return
+    impedance_heater.heater_keithley.set_voltage(4)
+    # STAGE 2
+    print("'RESTART HEATER' STAGE 2")
+    second_stage_wait_minutes = 2
+    second_stage_seconds_accumulator = 0
+    while float(second_stage_seconds_accumulator)/60.0 <= second_stage_wait_minutes:
+        second_stage_seconds_accumulator += 5
+        onek_pot_temperature = impedance_heater.triton_monitor.onek_pot_temp
+        sorb_temperature = impedance_heater.triton_monitor.sorb_temp
+        needle_valve_temperature = impedance_heater.triton_monitor.needle_valve_temp
+        still_pressure = impedance_heater.triton_monitor.still_pressure
+        if (onek_pot_temperature > impedance_heater.onek_limit) or \
+                (sorb_temperature > impedance_heater.sorb_limit) or \
+                (needle_valve_temperature > impedance_heater.needle_limit) or \
+                (still_pressure > impedance_heater.still_limit):
+            print('POT DRY.  RUNNING HEATER TO ZERO')
+            impedance_heater.heater_keithley.run_to_zero()
+            return
+        if impedance_heater.__class__.stalled == False:
+            print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
+            return
+        time.sleep(5)
+    if impedance_heater.__class__.running == False:
+        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
+        impedance_heater.heater_keithley.run_to_zero()
+        return
+    impedance_heater.heater_keithley.set_voltage(5.5)
+    # STAGE 3
+    print("'RESTART HEATER' STAGE 3")
+    third_stage_wait_minutes = 2
+    third_stage_seconds_accumulator = 0
+    while float(third_stage_seconds_accumulator)/60.0 <= third_stage_wait_minutes:
+        third_stage_seconds_accumulator += 5
+        onek_pot_temperature = impedance_heater.triton_monitor.onek_pot_temp
+        sorb_temperature = impedance_heater.triton_monitor.sorb_temp
+        needle_valve_temperature = impedance_heater.triton_monitor.needle_valve_temp
+        still_pressure = impedance_heater.triton_monitor.still_pressure
+        if (onek_pot_temperature > impedance_heater.onek_limit) or \
+                (sorb_temperature > impedance_heater.sorb_limit) or \
+                (needle_valve_temperature > impedance_heater.needle_limit) or \
+                (still_pressure > impedance_heater.still_limit):
+            print('POT DRY.  RUNNING HEATER TO ZERO')
+            impedance_heater.heater_keithley.run_to_zero()
+            return
+        if impedance_heater.__class__.stalled == False:
+            print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
+            return
+        time.sleep(5)
+    if impedance_heater.__class__.running == False:
+        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
+        impedance_heater.heater_keithley.run_to_zero()
+        return
+    impedance_heater.heater_keithley.set_voltage(6.5)
+    print("UNSTALLING TRITON LOOP")
+    impedance_heater.__class__.stalled = False
