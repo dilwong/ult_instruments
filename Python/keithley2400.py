@@ -9,6 +9,7 @@ try:
     import thread
 except:
     import _thread
+import atexit
 
 class keithley2400:
 
@@ -16,6 +17,10 @@ class keithley2400:
         self.keithley = serial.Serial(com_port, 9600, timeout = 1)
         self.lock = thread.allocate_lock()
         self.emergency_lock = 0
+
+        @atexit.register
+        def exit_handler():
+            self.keithley.close()
 
     def force_set_voltage(self, num):
         if -15 <= num <= 15:

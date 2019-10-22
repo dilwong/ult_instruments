@@ -15,6 +15,7 @@ import socket
 import json
 import winsound
 import Queue
+import atexit
 
 # Not a Singleton
 class impedance_heater:
@@ -140,18 +141,26 @@ class impedance_heater:
         self.__class__.stalled = False
 
     def listen(self):
+        
         if self.__class__.listening:
             print('ERROR: ALREADY LISTENING')
             return
         self.__class__.listening = True
         self.conn = None
         self.addr = None
+        
         try:
             listen_host = '127.0.0.1'
             listen_port = 65430
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind((listen_host, listen_port))
+            
+            @atexit.register
+            def listen_exit_handler():
+                s.close()
+
             s.listen(0)
+
             while True:
                 self.conn, self.addr = s.accept()
                 listen_string = self.conn.recv(1024)
