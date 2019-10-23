@@ -38,17 +38,17 @@ class keithley2450:
         def exit_handler():
             self.inst.write('logout')
             self.inst.close()
+            try:
+                self.lis_sock.close()
+            except:
+                pass
 
     def listen(self):
         host = '127.0.0.1'
         port = 65432
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.lis_sock = s
         s.bind((host, port))
-
-        @atexit.register
-        def listen_exit_handler():
-            s.close()
-
         s.listen(0)
         while self.on_flag:
             conn, addr = s.accept()
