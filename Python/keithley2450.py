@@ -5,6 +5,7 @@
 
 #Python 2.7 only
 #TO DO: Python 3 compatibility
+#TO DO: Message boundaries for recv over TCP
 
 import visa
 import time

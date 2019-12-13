@@ -1,5 +1,7 @@
 # Monitors the status of the dilution refrigerator
 
+#TO DO: Message boundaries for recv over TCP
+
 import socket
 import time
 try:
