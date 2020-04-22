@@ -4,6 +4,7 @@
 
 import socket
 import time
+import traceback
 try:
     import thread
 except ModuleNotFoundError:
@@ -30,6 +31,8 @@ class triton_monitor:
             self._still_press, \
             self._turbo_back_press, \
             self._n2_trap_press]
+        self.exception_list = []
+        self.consecutive_exceptions = 0
         for func in self.function_array:
             func()
             time.sleep(0.02)
@@ -38,9 +41,31 @@ class triton_monitor:
         
     def loop(self):
         while not self.stop:
-            for func in self.function_array:
-                func()
-                time.sleep(0.25)
+            try:
+                for func in self.function_array:
+                    func()
+                    time.sleep(0.25)
+                self.consecutive_exceptions = 0
+            except:
+                err_detect = traceback.format_exc()
+                self.exception_list.append(err_detect)
+                self.consecutive_exceptions += 1
+                if self.consecutive_exceptions > 25:
+                    self.stop = 1
+                    self.onek_pot_temp = 99999
+                    self.sorb_temp = 99999
+                    self.needle_valve_temp = 99999
+                    self.still_temp = 99999
+                    self.cold_plate_temp = 99999
+                    self.mix_chamber_temp = 99999
+                    self.stm_rx_temp = 99999
+                    self.stm_cx_temp = 99999
+                    self.tank_pressure = 99999
+                    self.condense_pressure = 99999
+                    self.still_pressure = 99999
+                    self.turbo_back_pressure = 99999
+                    self.n2_trap_pressure = 99999
+                time.sleep(1)
 
     def _onek_pot_temp(self):
         message = 'READ:DEV:T2:TEMP:SIG:TEMP\n'
