@@ -19,16 +19,19 @@
 #                                   where j=0 for X/Y & j=1 for R/THETA
 #                                   and k=0
 
-#Python 2.7 only
-#TO DO: Python 3 compatibility
-
 import visa
+import time
+import traceback
+import socket
+import thread
 
 class lockin:
 
     #The primary address is assumed to be 8
-    def __init__(self, address = 8, gpib_num = 0):
+    def __init__(self, address = 8, gpib_num = 0, start_listening = True):
         self.primary_id = 'GPIB' + str(gpib_num) + '::' +str(address) +'::INSTR'
+        if start_listening:
+            self.start_listen()
 
     def write(self, message):
         rm = visa.ResourceManager()
@@ -73,13 +76,18 @@ class lockin:
 
     #Sets harmonic
     def set_harmonic(self, harm):
+        try:
+            harm = int(harm) # Should not overwrite input
+        except ValueError:
+            'ERROR: Harmonic not an integer.'
+            return
         if isinstance(harm,int):
             if 1 <= harm <= 19999:
                 self.write('HARM ' + str(harm))
             else:
                 print 'ERROR: Harmonic out of bounds.'
         else:
-            print 'ERROR: Harmonic not an integer.'
+            print 'ERROR: Harmonic not an integer.' # Redundant
 
     #Gets harmonic
     def get_harmonic(self):
@@ -111,29 +119,38 @@ class lockin:
         self.write('AGAN')
 
     #Set time constant
-    def set_timeconstant(self):
+    def set_timeconstant(self, value = None):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
-            print 'SELECT TIME CONSTANT'
-            print '0 : 10us       10 : 1s'
-            print '1 : 30us       11 : 3s'
-            print '2 : 100us      12 : 10s'
-            print '3 : 300us      13 : 30s'
-            print '4 : 1ms        14 : 100s'
-            print '5 : 3ms        15 : 300s'
-            print '6 : 10ms       16 : 1ks'
-            print '7 : 30ms       17 : 3ks'
-            print '8 : 100ms      18 : 10ks'
-            print '9 : 300ms      19 : 30ks'
-            time_set = input()
+            if value is None:
+                print 'SELECT TIME CONSTANT'
+                print '0 : 10us       10 : 1s'
+                print '1 : 30us       11 : 3s'
+                print '2 : 100us      12 : 10s'
+                print '3 : 300us      13 : 30s'
+                print '4 : 1ms        14 : 100s'
+                print '5 : 3ms        15 : 300s'
+                print '6 : 10ms       16 : 1ks'
+                print '7 : 30ms       17 : 3ks'
+                print '8 : 100ms      18 : 10ks'
+                print '9 : 300ms      19 : 30ks'
+                time_set = input()
+            else:
+                try:
+                    time_set = int(value)
+                except ValueError:
+                    print "ERROR: Not an integer"
             if isinstance(time_set,int) and (0 <= time_set <= 19):
                 inst = rm.open_resource(self.primary_id)
                 inst.write('OFLT ' + str(time_set))
                 inst.close()
+            else:
+                print "Invalid Input: Must be integer between 0 and 19"
         rm.close
 
     #Get time constant
     def get_timeconstant(self):
+        val = None
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
             time_constant_map={
@@ -158,38 +175,49 @@ class lockin:
                 18 : '10ks',
                 19 : '30ks' }
             inst = rm.open_resource(self.primary_id)
-            print time_constant_map[int(inst.query('OFLT ?'))]
+            val = time_constant_map[int(inst.query('OFLT ?'))]
+            print val
             inst.close()
         rm.close
+        return val
 
     #Set sensitivity
-    def set_sensitivity(self):
+    def set_sensitivity(self, value = None):
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
-            print 'SELECT SENSITIVITY'
-            print '0  : 2nV        13 : 50uV'
-            print '1  : 5nV        14 : 100uV'
-            print '2  : 10nV       15 : 200uV'
-            print '3  : 20nV       16 : 500uV'
-            print '4  : 50nV       17 : 1mV'
-            print '5  : 100mV      18 : 2mV'
-            print '6  : 200nV      19 : 5mV'
-            print '7  : 500nV      20 : 10mV'
-            print '8  : 1uV        21 : 20mV'
-            print '9  : 2uV        22 : 50mV'
-            print '10 : 5uV        23 : 100mV'
-            print '11 : 10uV       24 : 200mV'
-            print '12 : 20uV       25 : 500mV'
-            print '                26 : 1V'
-            sens_set = input()
+            if value is None:
+                print 'SELECT SENSITIVITY'
+                print '0  : 2nV        13 : 50uV'
+                print '1  : 5nV        14 : 100uV'
+                print '2  : 10nV       15 : 200uV'
+                print '3  : 20nV       16 : 500uV'
+                print '4  : 50nV       17 : 1mV'
+                print '5  : 100nV      18 : 2mV'
+                print '6  : 200nV      19 : 5mV'
+                print '7  : 500nV      20 : 10mV'
+                print '8  : 1uV        21 : 20mV'
+                print '9  : 2uV        22 : 50mV'
+                print '10 : 5uV        23 : 100mV'
+                print '11 : 10uV       24 : 200mV'
+                print '12 : 20uV       25 : 500mV'
+                print '                26 : 1V'
+                sens_set = input()
+            else:
+                try:
+                    sens_set = int(value)
+                except ValueError:
+                    print "ERROR: Not an integer"
             if isinstance(sens_set,int) and (0 <= sens_set <= 26):
                 inst = rm.open_resource(self.primary_id)
                 inst.write('SENS ' + str(sens_set))
                 inst.close()
+            else:
+                print "Invalid Input: Must be integer between 0 and 26"
         rm.close
 
     #Get time constant
     def get_sensitivity(self):
+        val = None
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
             sens_map={
@@ -221,6 +249,58 @@ class lockin:
                 25 : '500mV',
                 26 : '1V' }
             inst = rm.open_resource(self.primary_id)
-            print sens_map[int(inst.query('SENS ?'))]
+            val = sens_map[int(inst.query('SENS ?'))]
+            print val
             inst.close()
         rm.close
+        return val
+
+    # TO DO: Eliminate code duplication
+    def loop(self):
+        host = '127.0.0.1'
+        port = 65426
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.lis_sock = s
+        s.bind((host, port))
+        s.listen(0)
+        while self.__listen_flag__:
+            conn, addr = s.accept()
+            listen_string = conn.recv(1024) # Possible rare bug: Needs to loop until \n is received
+            if listen_string == 'QUIT\n':
+                s.close()
+                self.__listen_flag__ = False
+            else:
+                try:
+                    listen_commands = listen_string.split()
+                    listen_args = '(' + ','.join(listen_commands[1:]) + ')'
+                    if listen_commands[0] in dir(self)[3:]:
+                        try:
+                            exec('result = self.' + listen_commands[0] + listen_args)
+                            if result:
+                                conn.sendall(str(result) + '\n')
+                            else:
+                                conn.sendall('NO DATA\n')
+                        except TypeError:
+                            conn.sendall('ERROR: TYPE ERROR\n')
+                    else:
+                        conn.sendall('ERROR: COMMAND ERROR\n')
+                except Exception:
+                    if len(self.error_list) < 21:
+                        err = traceback.format_exc()
+                        print 'ERROR in START thread:'
+                        print err
+                        self.error_list.append(err)
+                    time.sleep(0.5)
+
+    def start_listen(self):
+        self.error_list = []
+        self.__listen_flag__ = True
+        thread.start_new_thread(self.loop,())
+
+    def stop_listen(self):
+        host = '127.0.0.1'
+        port = 65426
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((host, port))
+        s.sendall('QUIT\n')
+        s.close()
