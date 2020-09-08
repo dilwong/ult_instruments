@@ -14,10 +14,12 @@
 #get_sensitivity()
 
 #NOT IMPLEMENTED YET:
-#self.read/write("ISRC(?) {i}") where i=0 gives A, i=1 gives A-B
-#self.read/write("DDEF(?) i,{j,k}") where i=1 for channel 1 & i=2 for channel 2
+# self.read/write("DDEF(?) i,{j,k}") where i=1 for channel 1 & i=2 for channel 2
 #                                   where j=0 for X/Y & j=1 for R/THETA
 #                                   and k=0
+# If a bad read command is sent, lock-in may send junk back in following
+# n queries. Need to implement a way to clear read buffer before each
+# read command.
 
 import visa
 import time
@@ -254,6 +256,21 @@ class lockin:
             inst.close()
         rm.close
         return val
+
+    def set_input_A(self):
+        self.write('ISRC 0')
+
+    def set_input_AminusB(self):
+        self.write('ISRC 1')
+
+    def get_input_setting(self): # A or A-B?
+        answer = self.read('ISRC ?')
+        if answer == '0\n':
+            return 'A'
+        elif answer == '1\n':
+            return 'A-B'
+        else:
+            return 'unknown state'
 
     # TO DO: Eliminate code duplication
     def loop(self):
