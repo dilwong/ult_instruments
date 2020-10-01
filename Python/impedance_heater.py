@@ -188,6 +188,8 @@ class impedance_heater:
                 arg_command, arg_numeric = listen_string.split()
                 arg_numeric = float(arg_numeric)
                 if arg_command == 'Set_Heater_Voltage':
+                    # self.lock.acquire() should probably be here instead of above to
+                    # not lock for temperature reads
                     self.heater_keithley.output_on()
                     self.heater_keithley.set_voltage(arg_numeric, 0.1)
                     self.conn.sendall('Done\n')
@@ -210,6 +212,15 @@ class impedance_heater:
                     self.conn.sendall(temp + '\n')
                 elif arg_command == 'Read_Still_Pressure':
                     press = str(self.triton_monitor.still_pressure)
+                    self.conn.sendall(press + '\n')
+                elif arg_command == 'Read_Mixing_Chamber_Temperature':
+                    press = str(self.triton_monitor.mix_chamber_temp)
+                    self.conn.sendall(press + '\n')
+                elif arg_command == 'Read_STM_RX_Temperature':
+                    press = str(self.triton_monitor.stm_rx_temp)
+                    self.conn.sendall(press + '\n')
+                elif arg_command == 'Read_STM_CX_Temperature':
+                    press = str(self.triton_monitor.stm_cx_temp)
                     self.conn.sendall(press + '\n')
                 elif arg_command == 'Unstall_Triton_Loop':
                     self.heater_keithley.output_on()
