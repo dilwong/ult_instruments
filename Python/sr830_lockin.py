@@ -17,6 +17,7 @@
 # self.read/write("DDEF(?) i,{j,k}") where i=1 for channel 1 & i=2 for channel 2
 #                                   where j=0 for X/Y & j=1 for R/THETA
 #                                   and k=0
+# FPOP for display vs X/Y
 # If a bad read command is sent, lock-in may send junk back in following
 # n queries. Need to implement a way to clear read buffer before each
 # read command.
@@ -272,6 +273,27 @@ class lockin:
         else:
             return 'unknown state'
 
+    # Set offset
+    def set_offset(self, offset, channel = 1):
+        # Always sets to no expand
+        if not -100 <= offset <= 100:
+            print 'ERROR: Please set offset between -100 and 100% of full scale'
+            return
+        if (channel == 1) or (channel == 2):
+            self.write('OEXP ' + str(channel) + ', ' + str(offset) + ', 0')
+        else:
+            print 'ERROR: channel must be 1 or 2'
+            return
+
+    # Get offset
+    def get_offset(self, channel = 1):
+        if (channel == 1) or (channel == 2):
+            resp = self.read('OEXP ? ' + str(channel))
+            return float(resp.split(',')[0])
+        else:
+            print 'ERROR: channel must be 1 or 2'
+            return
+
     # TO DO: Eliminate code duplication
     def loop(self):
         host = '127.0.0.1'
@@ -293,7 +315,7 @@ class lockin:
                     if listen_commands[0] in dir(self)[3:]:
                         try:
                             exec('result = self.' + listen_commands[0] + listen_args)
-                            if result:
+                            if result is not None:
                                 conn.sendall(str(result) + '\n')
                             else:
                                 conn.sendall('NO DATA\n')
