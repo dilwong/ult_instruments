@@ -39,6 +39,7 @@ class triton_monitor:
             func()
             time.sleep(0.02)
         self.stop = 0
+        self.__loop_state__ = 0
         self.terminate = 0
         self.lock = thread.allocate_lock()
         self.thread_counter = 1
@@ -66,17 +67,28 @@ class triton_monitor:
                 self.lock.release()
                 if nThreads == 1:
                     break
-                time.sleep(0.25)
+                else:
+                    time.sleep(0.25)
+            while True:
+                if self.__loop_state__ == 0:
+                    break
+                else:
+                    time.sleep(0.25)
         
         thread.start_new_thread(self.loop,())
         
     def loop(self):
+        self.__loop_state__ = 1
         while not self.stop:
             try:
                 for func in self.function_array:
                     func()
+                    if self.terminate == 1:
+                        break
                     time.sleep(0.25)
                 self.consecutive_exceptions = 0
+                if self.terminate == 1:
+                    break
             except:
                 err_detect = traceback.format_exc()
                 self.exception_list.append(err_detect)
@@ -97,6 +109,7 @@ class triton_monitor:
                     self.turbo_back_pressure = 99999
                     self.n2_trap_pressure = 99999
                 time.sleep(1)
+        self.__loop_state__ = 0
 
     def _onek_pot_temp(self):
         message = 'READ:DEV:T2:TEMP:SIG:TEMP\n'
