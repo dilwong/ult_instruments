@@ -50,6 +50,9 @@ class impedance_heater:
         self.sorb_limit = float(raw_input('Enter MAXIMUM sorb temperature (K): '))
         self.needle_limit = float(raw_input('Enter MAXIMUM needle valve temperature (K): '))
         self.still_limit = float(raw_input('Enter MAXIMUM still pressure (mbar):'))
+        self.onek_alarm = 1.8 # T
+        self.sorb_alarm = 1.8 # T
+        self.condense_alarm = 180 # mbar
         self.stored_heater_voltage = None
         thread.start_new_thread(self.loop, ())
 
@@ -68,6 +71,8 @@ class impedance_heater:
                     needle_valve_temperature = self.triton_monitor.needle_valve_temp
                     time.sleep(1)
                     still_pressure = self.triton_monitor.still_pressure
+                    time.sleep(0.05)
+                    condense_pressure = self.triton_monitor.condense_pressure
                     print('1K pot: ' + str(onek_pot_temperature) + ' K')
                     print('Sorb: ' + str(sorb_temperature) + ' K')
                     print('Needle valve: ' + str(needle_valve_temperature) + ' K')
@@ -92,7 +97,9 @@ class impedance_heater:
                         json.dump(json_log_object,logpathfile)
                         logpathfile.write(',\n')
                     if not self.__class__.stalled:
-                        if (sorb_temperature > 1.8): #SORB ALARM
+                        if (sorb_temperature > self.sorb_alarm) or \
+                                (onek_pot_temperature > self.onek_alarm) or \
+                                (condense_pressure > self.condense_alarm): # ALARM
                             self.annoying_sound()
                         if (onek_pot_temperature > self.onek_limit) or \
                                 (sorb_temperature > self.sorb_limit) or \
