@@ -243,16 +243,16 @@ class triton_monitor:
             self.lock.release()
             return
         else:
+            print('TRITON MONITOR LISTENING AT PORT ' + str(port))
             self.__port_list__.append(port)
             self.thread_counter += 1
             self.lock.release()
         
-        host = '127.0.0.1'
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind((host, port))
-        s.listen(0)
-        
         try:
+            host = '127.0.0.1'
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind((host, port))
+            s.listen(0)
             while self.terminate == 0:
                 conn, _ = s.accept()
                 query = conn.recv(1024).decode()
