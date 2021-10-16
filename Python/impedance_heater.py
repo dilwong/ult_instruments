@@ -52,7 +52,7 @@ class impedance_heater:
         self.still_limit = float(raw_input('Enter MAXIMUM still pressure (mbar):'))
         self.onek_alarm = 1.8 # T
         self.sorb_alarm = 1.8 # T
-        self.condense_alarm = 180 # mbar
+        self.condense_alarm = 185 # mbar
         self.stored_heater_voltage = None
         thread.start_new_thread(self.loop, ())
 
@@ -250,20 +250,25 @@ class impedance_heater:
             finally:
                 self.lock.release()
 
-    def annoying_sound(self):
-        soundC=523
-        soundD=587
-        soundE=659
-        soundF=698
-        soundG=784
-        winsound.Beep(soundD,200)
-        winsound.Beep(soundC,100)
-        time.sleep(0.1)
-        winsound.Beep(soundD,200)
-        winsound.Beep(soundC,50)
-        winsound.Beep(soundD,200)
-        winsound.Beep(soundC,50)
-        winsound.Beep(soundF,300)
+    def annoying_sound(self, song = 'baby'):
+        if song is None:
+            pass
+        elif song == 'baby': # Default song to play
+            soundC=523
+            soundD=587
+            soundE=659
+            soundF=698
+            soundG=784
+            winsound.Beep(soundD,200)
+            winsound.Beep(soundC,100)
+            time.sleep(0.1)
+            winsound.Beep(soundD,200)
+            winsound.Beep(soundC,50)
+            winsound.Beep(soundD,200)
+            winsound.Beep(soundC,50)
+            winsound.Beep(soundF,300)
+        else:
+            pass
 
 # Example of a stall procedure
 # Needs to be tested extensively!!!

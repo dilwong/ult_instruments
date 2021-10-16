@@ -179,7 +179,6 @@ class lockin:
                 19 : '30ks' }
             inst = rm.open_resource(self.primary_id)
             val = time_constant_map[int(inst.query('OFLT ?'))]
-            print val
             inst.close()
         rm.close
         return val
@@ -253,7 +252,6 @@ class lockin:
                 26 : '1V' }
             inst = rm.open_resource(self.primary_id)
             val = sens_map[int(inst.query('SENS ?'))]
-            print val
             inst.close()
         rm.close
         return val

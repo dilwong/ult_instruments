@@ -12,7 +12,7 @@ import atexit
 
 class mercuryIPS:
 
-    def __init__(self, com_port = 'COM6'):
+    def __init__(self, com_port = 'COM5'):
         self.__power_supply__ = serial.Serial(com_port, 9600, timeout = 1)
         self.x = vectorDirection(self, 'X')
         self.y = vectorDirection(self, 'Y')
