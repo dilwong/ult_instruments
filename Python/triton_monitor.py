@@ -33,13 +33,13 @@ class triton_monitor:
             self._turbo_back_press, \
             self._n2_trap_press]
         self.exception_list = []
-        self.__port_list__ = []
+        self._port_list = []
         self.consecutive_exceptions = 0
         for func in self.function_array:
             func()
             time.sleep(0.02)
         self.stop = 0
-        self.__loop_state__ = 0
+        self._loop_state = 0
         self.terminate = 0
         self.lock = thread.allocate_lock()
         self.thread_counter = 1
@@ -48,7 +48,7 @@ class triton_monitor:
         def exit_handler():
             self.terminate = 1
             self.lock.acquire()
-            listen_port_list = self.__port_list__
+            listen_port_list = self._port_list
             self.lock.release()
             for pt in listen_port_list:
                 try:
@@ -70,7 +70,7 @@ class triton_monitor:
                 else:
                     time.sleep(0.25)
             while True:
-                if self.__loop_state__ == 0:
+                if self._loop_state == 0:
                     break
                 else:
                     time.sleep(0.25)
@@ -78,7 +78,7 @@ class triton_monitor:
         thread.start_new_thread(self.loop,())
         
     def loop(self):
-        self.__loop_state__ = 1
+        self._loop_state = 1
         while not self.stop:
             try:
                 for func in self.function_array:
@@ -109,7 +109,7 @@ class triton_monitor:
                     self.turbo_back_pressure = 99999
                     self.n2_trap_pressure = 99999
                 time.sleep(1)
-        self.__loop_state__ = 0
+        self._loop_state = 0
 
     def _onek_pot_temp(self):
         message = 'READ:DEV:T2:TEMP:SIG:TEMP\n'
@@ -179,7 +179,7 @@ class triton_monitor:
                     return 0
                 return float(response.split(':')[6][:response_slice])
             except Exception:
-                print('Error detected in triton_monitor.__read_triton__')
+                print('Error detected in triton_monitor.read_triton')
                 err = traceback.format_exc()
                 print(err)
                 time.sleep(5)
@@ -187,9 +187,9 @@ class triton_monitor:
                 s.close()
 
     def log(self, filename, wait_time):
-        thread.start_new_thread(self.__log__,(filename, wait_time))
+        thread.start_new_thread(self._log,(filename, wait_time))
 
-    def __log__(self, filename, wait_time):
+    def _log(self, filename, wait_time):
 
         import json
         import datetime
@@ -223,7 +223,7 @@ class triton_monitor:
                     json.dump(json_log_object, logpathfile)
                     logpathfile.write(',\n')
         except Exception:
-            print('Error detected in triton_monitor.__log__')
+            print('Error detected in triton_monitor._log')
             err = traceback.format_exc()
             print(err)
             print('Stopping log...')
@@ -233,18 +233,18 @@ class triton_monitor:
             self.lock.release()
 
     def listen(self, port):
-        thread.start_new_thread(self.__listen__,(port, ))
+        thread.start_new_thread(self._listen,(port, ))
     
-    def __listen__(self, port):
+    def _listen(self, port):
         
         self.lock.acquire()
-        if port in self.__port_list__:
+        if port in self._port_list:
             print('ERROR: PORT ALREADY BEING USED')
             self.lock.release()
             return
         else:
             print('TRITON MONITOR LISTENING AT PORT ' + str(port))
-            self.__port_list__.append(port)
+            self._port_list.append(port)
             self.thread_counter += 1
             self.lock.release()
         
@@ -287,14 +287,180 @@ class triton_monitor:
                 reply = str(reply) + '\n'
                 conn.sendall(reply.encode())
         except Exception:
-            print('Error detected in triton_monitor.__listen__')
+            print('Error detected in triton_monitor._listen')
             err = traceback.format_exc()
             print(err)
             print('Stopping listen...')
         finally:
             s.close()
             self.lock.acquire()
-            if port in self.__port_list__:
-                self.__port_list__.remove(port)
+            if port in self._port_list:
+                self._port_list.remove(port)
                 self.thread_counter -= 1
             self.lock.release()
+
+    # Records and plots the temperatures
+    # TO DO: Optionally plot pressures
+    def plot_temperature(self, refresh_time, plot = None, log_filename = None):
+
+        import matplotlib.pyplot as plt
+
+        if log_filename is not None:
+            # Log data and plotted data are sampled at different times and so can be different.
+            self.log(log_filename, refresh_time)
+        if plot is None:
+            plot = temperature_plot()
+        plot.fig = plt.figure() # This does not work in a new thread
+        plot.ax = plot.fig.add_subplot(111)
+        thread.start_new_thread(self._plot,(plot, refresh_time))
+        return plot
+        
+    def _plot(self, plot, refresh_time):
+        
+        import datetime
+        import matplotlib
+
+        self.lock.acquire()
+        self.thread_counter += 1
+        self.lock.release()
+
+        try:
+            while self.terminate == 0:
+                # Careful: I think this is not time-zone aware. Assume we are working on EST
+                plot.current_time_array.append(datetime.datetime.now())
+                plot.onek_pot_temp_array.append(self.onek_pot_temp)
+                plot.sorb_temp_array.append(self.sorb_temp)
+                plot.needle_valve_temp_array.append(self.needle_valve_temp)
+                plot.still_temp_array.append(self.still_temp)
+                plot.cold_plate_temp_array.append(self.cold_plate_temp)
+                plot.mix_chamber_temp_array.append(self.mix_chamber_temp)
+                plot.stm_rx_temp_array.append(self.stm_rx_temp)
+                plot.stm_cx_temp_array.append(self.stm_cx_temp)
+                if plot.first_time_flag:
+                    
+                    plot.first_time_flag = False
+                    
+                    for arr, lbl in zip(plot.data_arrays, plot.labels):
+                        p, = plot.ax.plot(plot.current_time_array, arr, label = lbl)
+                        plot.lines.append(p)
+                    
+                    plot.legend = plot.ax.legend()
+                    plot.ax.set_xlabel('Date')
+                    plot.ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m/%d\n%I:%M %p'))
+                    plot.fig.tight_layout()
+                    
+                    legend_lines = plot.legend.get_lines()
+                    line_map = dict()
+                    for legend_line, plot_line in zip(legend_lines, plot.lines):
+                        legend_line.set_picker(True)
+                        legend_line.set_pickradius(5)
+                        line_map[legend_line] = plot_line # Careful: Using mutables as keys to dict
+
+                    def pick_line(event):
+                        legend_line = event.artist
+                        plot_line = line_map[legend_line]
+                        visibility = not plot_line.get_visible()
+                        plot_line.set_visible(visibility)
+                        if visibility:
+                            legend_line.set_alpha(1)
+                        else:
+                            legend_line.set_alpha(0.2)
+                        plot.fig.canvas.draw()
+
+                    plot.pick_line = pick_line
+                    plot.fig.canvas.mpl_connect('pick_event', pick_line)
+
+                    plot.fig.canvas.draw()
+                else:
+                    for line, arr in zip(plot.lines, plot.data_arrays):
+                        line.set_data(plot.current_time_array, arr)
+                    plot.fig.canvas.draw()
+                time.sleep(refresh_time)
+        except Exception:
+            print('Error detected in triton_monitor._plot')
+            err = traceback.format_exc()
+            print(err)
+        finally:
+            self.lock.acquire()
+            self.thread_counter -= 1
+            self.lock.release()
+
+# Auxiliary object that stores the temperatures in arrays and has helper methods for configuring plot axes
+class temperature_plot:
+    
+    def __init__(self):
+        self.current_time_array = []
+        self.onek_pot_temp_array = []
+        self.sorb_temp_array = []
+        self.needle_valve_temp_array = []
+        self.still_temp_array = []
+        self.cold_plate_temp_array = []
+        self.mix_chamber_temp_array = []
+        self.stm_rx_temp_array = []
+        self.stm_cx_temp_array = []
+        self.first_time_flag = True
+        self.fig = None
+        self.ax = None
+        self.legend = None
+
+        self.data_arrays = [
+            self.onek_pot_temp_array,
+            self.sorb_temp_array,
+            self.needle_valve_temp_array,
+            self.still_temp_array,
+            self.cold_plate_temp_array,
+            self.mix_chamber_temp_array,
+            self.stm_rx_temp_array,
+            self.stm_cx_temp_array
+        ]
+        self.labels = [
+            '1K Pot Temp (K)',
+            'Sorb Temp (K)',
+            'Needle Valve Temp (K)',
+            'Still Temp (K)',
+            'Cold Plate Temp (K)',
+            'Mix Chamber Temp (K)',
+            'STM RX Temp (K)',
+            'STM CX Temp (K)'
+        ]
+        self.lines = []
+    
+    # Input x_min and x_max as a human-readable date string.
+    # Do not input a datetime.datetime object or a Unix time float!
+    def xlim(self, x_min, x_max):
+        if self.ax is None:
+            print('Error: Figure ax not yet initialized')
+        else:
+            import dateutil
+            self.ax.set_xlim(dateutil.parser.parse(x_min), dateutil.parser.parse(x_max))
+    
+    def ylim(self, y_min, y_max):
+        if self.ax is None:
+            print('Error: Figure ax not yet initialized')
+        else:
+            self.ax.set_ylim(y_min, y_max) # Maybe switch arguments if y_max < ymin ?
+    
+    def full_range(self):
+        import datetime
+        if (self.ax is None) or (len(self.current_time_array) == 0):
+            print('Error: Figure ax not yet initialized')
+            return
+        y_min = 99999
+        y_max = 0
+        for arr in self.data_arrays:
+            min_candidate = min(arr)
+            max_candidate = max(arr)
+            if min_candidate < y_min:
+                y_min = min_candidate
+            if max_candidate > y_max:
+                y_max = max_candidate
+        if y_min < y_max:
+            self.ax.set_ylim(y_min - 2, y_max + 2)
+        # min = datetime.datetime(9999, 12, 31) # The distant future: 12/31/9999
+        # max = datetime.datetime(1, 1, 1) # The distant past: 1/1/0001
+        x_min = min(self.current_time_array)
+        x_max = max(self.current_time_array)
+        print(x_min)
+        print(x_max)
+        if x_min < x_max:
+            self.ax.set_xlim(x_min - datetime.timedelta(hours = 0.25), x_max + datetime.timedelta(hours = 0.25))
