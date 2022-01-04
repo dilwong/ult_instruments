@@ -13,6 +13,13 @@ except ModuleNotFoundError:
 
 # This class is not a Singleton, so multiple instances check temperature and pressure independently.
 class triton_monitor:
+    """
+    Queries Oxford Instruments Triton System Control (at IP_address, port) periodically to monitor system temperatures.
+
+    Use triton_monitor.log(FILENAME, TIME) to record temperatures in JSON format every TIME seconds.
+    Use triton_monitor.plot_temperature(TIME) to plot temperatures, sampled every TIME seconds.
+
+    """
     
     def __init__(self, IP_address, port):
 
@@ -34,6 +41,7 @@ class triton_monitor:
             self._n2_trap_press]
         self.exception_list = []
         self._port_list = []
+        self._logfiles = set()
         self.consecutive_exceptions = 0
         for func in self.function_array:
             func()
@@ -195,6 +203,12 @@ class triton_monitor:
         import datetime
 
         self.lock.acquire()
+        if filename in self._logfiles:
+            print('Another triton_monitor.log thread is logging to ' + filename)
+            print('Ignoring new request to log to ' + filename + '...')
+            self.lock.release()
+            return
+        self._logfiles.add(filename)
         self.thread_counter += 1
         self.lock.release()
 
@@ -228,9 +242,14 @@ class triton_monitor:
             print(err)
             print('Stopping log...')
         finally:
-            self.lock.acquire()
-            self.thread_counter -= 1
-            self.lock.release()
+            try:
+                self.lock.acquire()
+                self.thread_counter -= 1
+                self._logfiles.remove(filename)
+            except KeyError:
+                print('Unknown failure to remove ' + filename + ' from _logfiles.')
+            finally:
+                self.lock.release()
 
     def listen(self, port):
         thread.start_new_thread(self._listen,(port, ))
@@ -351,20 +370,21 @@ class triton_monitor:
                     
                     legend_lines = plot.legend.get_lines()
                     line_map = dict()
-                    for legend_line, plot_line in zip(legend_lines, plot.lines):
+                    for idx, (legend_line, plot_line) in enumerate(zip(legend_lines, plot.lines)):
                         legend_line.set_picker(True)
                         legend_line.set_pickradius(5)
-                        line_map[legend_line] = plot_line # Careful: Using mutables as keys to dict
+                        line_map[legend_line] = (plot_line, idx) # Careful: Using mutables as keys to dict
 
                     def pick_line(event):
                         legend_line = event.artist
-                        plot_line = line_map[legend_line]
+                        plot_line, idx = line_map[legend_line]
                         visibility = not plot_line.get_visible()
                         plot_line.set_visible(visibility)
                         if visibility:
                             legend_line.set_alpha(1)
                         else:
                             legend_line.set_alpha(0.2)
+                        plot.visible[idx] = visibility
                         plot.fig.canvas.draw()
 
                     plot.pick_line = pick_line
@@ -424,21 +444,71 @@ class temperature_plot:
             'STM CX Temp (K)'
         ]
         self.lines = []
+        self.visible = [True] * 8
     
     # Input x_min and x_max as a human-readable date string.
     # Do not input a datetime.datetime object or a Unix time float!
+    #
+    # Alternatively, insert None for x_min or x_max to keep the left or right axis value the same.
+    # Or insert 'now' for x_min or x_max for the current date/time.
+    # Or insert 'now + 15 min', 'now + 1day2hrs', etc...
+    #
+    # TO DO: Scrub inputs
     def xlim(self, x_min, x_max):
         if self.ax is None:
             print('Error: Figure ax not yet initialized')
         else:
             import dateutil
-            self.ax.set_xlim(dateutil.parser.parse(x_min), dateutil.parser.parse(x_max))
+            import datetime
+            from matplotlib.dates import num2date
+            # TO DO: Refactor to remove code duplication between x_min and x_max cases
+            if x_min is None:
+                x_min, _ = self.ax.get_xlim()
+                x_min = num2date(x_min) # Convert days since epoch to datetime object to compare x_min and x_max
+                x_min = datetime.datetime.combine(x_min.date(), x_min.time()) # Strip timezone info
+            elif x_min.lower()[:3] == 'now':
+                ops = x_min.split()
+                x_min = datetime.datetime.now()
+                if len(ops) >= 3:
+                    dt = parse_string_to_timedelta(''.join(ops[2:]))
+                    if dt is not None:
+                        if ops[1] == '+':
+                            x_min = x_min + dt
+                        elif ops[1] == '-':
+                            x_min = x_min - dt
+            else:
+                x_min = dateutil.parser.parse(x_min)
+            if x_max is None:
+                _, x_max = self.ax.get_xlim()
+                x_max = num2date(x_max) # Convert days since epoch to datetime object to compare x_min and x_max
+                x_max = datetime.datetime.combine(x_max.date(), x_max.time()) # Strip timezone info
+            elif x_max.lower()[:3] == 'now':
+                ops = x_max.split()
+                x_max = datetime.datetime.now()
+                if len(ops) >= 3:
+                    dt = parse_string_to_timedelta(''.join(ops[2:]))
+                    if dt is not None:
+                        if ops[1] == '+':
+                            x_max = x_max + dt
+                        elif ops[1] == '-':
+                            x_max = x_max - dt
+            else:
+                x_max = dateutil.parser.parse(x_max)
+            if x_min > x_max: # matplotlib handles the x_min == x_max case automatically
+                x_min, x_max = x_max, x_min
+            self.ax.set_xlim(x_min, x_max)
     
     def ylim(self, y_min, y_max):
         if self.ax is None:
             print('Error: Figure ax not yet initialized')
         else:
-            self.ax.set_ylim(y_min, y_max) # Maybe switch arguments if y_max < ymin ?
+            if y_min is None:
+                y_min, _ = self.ax.get_ylim()
+            if y_max is None:
+                _, y_max = self.ax.get_ylim()
+            if y_min > y_max: # matplotlib handles the y_min == y_max case automatically
+                y_min, y_max = y_max, y_min
+            self.ax.set_ylim(y_min, y_max)
     
     def full_range(self):
         import datetime
@@ -447,7 +517,9 @@ class temperature_plot:
             return
         y_min = 99999
         y_max = 0
-        for arr in self.data_arrays:
+        for vis, arr in zip(self.visible, self.data_arrays):
+            if not vis:
+                continue
             min_candidate = min(arr)
             max_candidate = max(arr)
             if min_candidate < y_min:
@@ -456,11 +528,24 @@ class temperature_plot:
                 y_max = max_candidate
         if y_min < y_max:
             self.ax.set_ylim(y_min - 2, y_max + 2)
-        # min = datetime.datetime(9999, 12, 31) # The distant future: 12/31/9999
-        # max = datetime.datetime(1, 1, 1) # The distant past: 1/1/0001
         x_min = min(self.current_time_array)
         x_max = max(self.current_time_array)
         print(x_min)
         print(x_max)
         if x_min < x_max:
             self.ax.set_xlim(x_min - datetime.timedelta(hours = 0.25), x_max + datetime.timedelta(hours = 0.25))
+
+def parse_string_to_timedelta(s):
+    
+    import re
+    import datetime
+
+    # Mega ugly regex
+    expression = r'^\s*((?P<days>[+-]?(\d*\.)?\d+)\s?d(ay)?s?)?\s*((?P<hours>[+-]?(\d*\.)?\d+)\s?h(ou(?!s)(?=r))?r?s?)?\s*((?P<minutes>[+-]?(\d*\.)?\d+)\s?(m(?!s|ute))(in)?(ute)?s?)?\s*((?P<seconds>[+-]?(\d*\.)?\d+)\s?(s(?!ond|s))(ec)?(ond)?s?)?\s*$'
+    pattern = re.compile(expression, re.IGNORECASE)
+
+    match = pattern.match(s)
+    if match is not None:
+        return datetime.timedelta(**{unit: float(value) for unit, value in match.groupdict().items() if value is not None})
+    else:
+        return None
