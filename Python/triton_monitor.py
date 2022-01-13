@@ -6,6 +6,7 @@ import socket
 import time
 import traceback
 import atexit
+from collections import deque
 try:
     import thread
 except ModuleNotFoundError:
@@ -25,20 +26,21 @@ class triton_monitor:
 
         self.IP_address = IP_address
         self.port = port
-        self.function_array = [ \
-            self._onek_pot_temp, \
-            self._sorb_temp, \
-            self._needle_valve_temp, \
-            self._still_temp, \
-            self._cold_plate_temp, \
-            self._mix_chamber_temp, \
-            self._stm_rx_temp, \
-            self._stm_cx_temp, \
-            self._tank_press, \
-            self._condense_press, \
-            self._still_press, \
-            self._turbo_back_press, \
-            self._n2_trap_press]
+        self.function_array = [
+            self._onek_pot_temp,
+            self._sorb_temp,
+            self._needle_valve_temp,
+            self._still_temp,
+            self._cold_plate_temp,
+            self._mix_chamber_temp,
+            self._stm_rx_temp,
+            self._stm_cx_temp,
+            self._tank_press,
+            self._condense_press,
+            self._still_press,
+            self._turbo_back_press,
+            self._n2_trap_press
+            ]
         self.exception_list = []
         self._port_list = []
         self._logfiles = set()
@@ -84,6 +86,10 @@ class triton_monitor:
                     time.sleep(0.25)
         
         thread.start_new_thread(self.loop,())
+
+        self._hash_deque = deque(maxlen= 60 * 5)
+        self._unchanging = False
+        thread.start_new_thread(self._check_stagnate,())
         
     def loop(self):
         self._loop_state = 1
@@ -193,6 +199,46 @@ class triton_monitor:
                 time.sleep(5)
             finally:
                 s.close()
+
+    def get_all(self):
+        return (self.onek_pot_temp,
+                    self.sorb_temp,
+                    self.needle_valve_temp,
+                    self.still_temp,
+                    self.cold_plate_temp,
+                    self.mix_chamber_temp,
+                    self.stm_rx_temp,
+                    self.stm_cx_temp,
+                    self.tank_pressure,
+                    self.condense_pressure,
+                    self.still_pressure,
+                    self.turbo_back_pressure,
+                    self.n2_trap_pressure
+        )
+    
+    def _check_stagnate(self):
+
+        self.lock.acquire()
+        self.thread_counter += 1
+        self.lock.release()
+
+        try:
+            while (self.terminate == 0):
+                time.sleep(1)
+                self._hash_deque.append(hash(self.get_all()))
+                first_value = self._hash_deque[0]
+                if all(first_value == value for value in self._hash_deque):
+                    self._unchanging = True
+                else:
+                    self._unchanging = False
+        except:
+            print('Error detected in triton_monitor._check_stagnate')
+            err = traceback.format_exc()
+            print(err)
+        finally:
+            self.lock.acquire()
+            self.thread_counter -= 1
+            self.lock.release()
 
     def log(self, filename, wait_time):
         thread.start_new_thread(self._log,(filename, wait_time))

@@ -11,8 +11,6 @@ import time
 import datetime
 import traceback
 import socket
-#from colorama import Fore
-import json
 import winsound
 import Queue
 import atexit
@@ -25,10 +23,9 @@ class impedance_heater:
     executing = False
     stalled = False
 
-    def __init__(self, triton_monitor, heater_keithley, log_directory):
+    def __init__(self, triton_monitor, heater_keithley, log_directory = None):
         self.triton_monitor = triton_monitor
         self.heater_keithley = heater_keithley
-        self.log_directory = log_directory
         self.queue = Queue.Queue()
         self.lock = thread.allocate_lock()
         self.exception_list = []
@@ -77,26 +74,31 @@ class impedance_heater:
                     print('Sorb: ' + str(sorb_temperature) + ' K')
                     print('Needle valve: ' + str(needle_valve_temperature) + ' K')
                     print('Still: ' + str(still_pressure) + ' mbar')
-                    json_log_object = {'time':datetime_string, \
-                        'pot_temp':onek_pot_temperature, \
-                        'sorb_temp':sorb_temperature, \
-                        'needle_valve_temp':needle_valve_temperature, \
-                        'still_pressure':still_pressure}
-                    json_log_object['heater_not_stalled'] = 1
                     if not self.__class__.stalled:
                         heater_voltage = self.heater_keithley.read_voltage()
                         heater_current = self.heater_keithley.read_current()
                         print('VOLTAGE: ' + str(heater_voltage) + ' V')
                         print('CURRENT: ' + str(heater_current) + ' uA')
-                        json_log_object['heater_voltage'] = heater_voltage
-                        json_log_object['heater_current'] = heater_current
-                        json_log_object['heater_not_stalled'] = 0
                     print('Run "triton_stop()" to QUIT')
-                    logpath = self.log_directory + 'triton_' + datetime_string.split(' ')[0].replace('-','')
-                    with open(logpath,'a+') as logpathfile:
-                        json.dump(json_log_object,logpathfile)
-                        logpathfile.write(',\n')
                     if not self.__class__.stalled:
+                        if self.triton_monitor._unchanging:
+                            print('WARNING AT ' + datetime_string + ': THE TEMPERATURES HAVE NOT CHANGED IN THE LAST 5 MINUTES!')
+                            cached_voltage = heater_voltage
+                            self.annoying_sound()
+                            if heater_voltage >= 3:
+                                print('REDUCING THE HEATER VOLTAGE TO 3.0 V...')
+                                self.heater_keithley.set_voltage(3.0, 0.1)
+                            print()
+                            time_since_unchange = 60 * 5
+                            while self.triton_monitor._unchanging and (not self.stop):
+                                time.sleep(20)
+                                time_since_unchange += 20
+                                print '\rTEMPERATURES HAVE NOT CHANGED IN THE LAST ' + str(int(time_since_unchange / 60)) + ' minutes.',
+                                self.annoying_sound()
+                            if not self.stop:
+                                time.sleep(5)
+                                print('THE TEMPERATURE IS CHANGING AGAIN. RESTORING HEATER VOLTAGE...')
+                                self.heater_keithley.set_voltage(cached_voltage, 0.1)
                         if (sorb_temperature > self.sorb_alarm) or \
                                 (onek_pot_temperature > self.onek_alarm) or \
                                 (condense_pressure > self.condense_alarm): # ALARM
