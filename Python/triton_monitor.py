@@ -12,6 +12,12 @@ try:
 except ModuleNotFoundError:
     import _thread as thread
 
+import datetime
+import re
+dt_expression = r'^\s*((?P<days>[+-]?(\d*\.)?\d+)\s?d(ay)?s?)?\s*((?P<hours>[+-]?(\d*\.)?\d+)\s?h(ou(?!s)(?=r))?r?s?)?\s*((?P<minutes>[+-]?(\d*\.)?\d+)\s?(m(?!s|ute))(in)?(ute)?s?)?\s*((?P<seconds>[+-]?(\d*\.)?\d+)\s?(s(?!ond|s))(ec)?(ond)?s?)?\s*$'
+dt_pattern = re.compile(dt_expression, re.IGNORECASE)
+now_pattern = re.compile(r'^\s*now\s*(?P<op>(\+|-))?\s*(?P<dt>([^\W_]|\s)+)?$', re.IGNORECASE)
+
 # This class is not a Singleton, so multiple instances check temperature and pressure independently.
 class triton_monitor:
     """
@@ -246,7 +252,6 @@ class triton_monitor:
     def _log(self, filename, wait_time):
 
         import json
-        import datetime
 
         self.lock.acquire()
         if filename in self._logfiles:
@@ -382,7 +387,6 @@ class triton_monitor:
         
     def _plot(self, plot, refresh_time):
         
-        import datetime
         import matplotlib
 
         self.lock.acquire()
@@ -505,7 +509,6 @@ class temperature_plot:
             print('Error: Figure ax not yet initialized')
         else:
             import dateutil
-            import datetime
             from matplotlib.dates import num2date
             # TO DO: Refactor to remove code duplication between x_min and x_max cases
             if x_min is None:
@@ -513,15 +516,7 @@ class temperature_plot:
                 x_min = num2date(x_min) # Convert days since epoch to datetime object to compare x_min and x_max
                 x_min = datetime.datetime.combine(x_min.date(), x_min.time()) # Strip timezone info
             elif x_min.lower()[:3] == 'now':
-                ops = x_min.split()
-                x_min = datetime.datetime.now()
-                if len(ops) >= 3:
-                    dt = parse_string_to_timedelta(''.join(ops[2:]))
-                    if dt is not None:
-                        if ops[1] == '+':
-                            x_min = x_min + dt
-                        elif ops[1] == '-':
-                            x_min = x_min - dt
+                x_min = parse_now_string(x_min)
             else:
                 x_min = dateutil.parser.parse(x_min)
             if x_max is None:
@@ -529,15 +524,7 @@ class temperature_plot:
                 x_max = num2date(x_max) # Convert days since epoch to datetime object to compare x_min and x_max
                 x_max = datetime.datetime.combine(x_max.date(), x_max.time()) # Strip timezone info
             elif x_max.lower()[:3] == 'now':
-                ops = x_max.split()
-                x_max = datetime.datetime.now()
-                if len(ops) >= 3:
-                    dt = parse_string_to_timedelta(''.join(ops[2:]))
-                    if dt is not None:
-                        if ops[1] == '+':
-                            x_max = x_max + dt
-                        elif ops[1] == '-':
-                            x_max = x_max - dt
+                x_max = parse_now_string(x_max)
             else:
                 x_max = dateutil.parser.parse(x_max)
             if x_min > x_max: # matplotlib handles the x_min == x_max case automatically
@@ -557,7 +544,6 @@ class temperature_plot:
             self.ax.set_ylim(y_min, y_max)
     
     def full_range(self):
-        import datetime
         if (self.ax is None) or (len(self.current_time_array) == 0):
             print('Error: Figure ax not yet initialized')
             return
@@ -582,16 +568,29 @@ class temperature_plot:
             self.ax.set_xlim(x_min - datetime.timedelta(hours = 0.25), x_max + datetime.timedelta(hours = 0.25))
 
 def parse_string_to_timedelta(s):
-    
-    import re
-    import datetime
 
-    # Mega ugly regex
-    expression = r'^\s*((?P<days>[+-]?(\d*\.)?\d+)\s?d(ay)?s?)?\s*((?P<hours>[+-]?(\d*\.)?\d+)\s?h(ou(?!s)(?=r))?r?s?)?\s*((?P<minutes>[+-]?(\d*\.)?\d+)\s?(m(?!s|ute))(in)?(ute)?s?)?\s*((?P<seconds>[+-]?(\d*\.)?\d+)\s?(s(?!ond|s))(ec)?(ond)?s?)?\s*$'
-    pattern = re.compile(expression, re.IGNORECASE)
-
-    match = pattern.match(s)
+    match = dt_pattern.match(s)
     if match is not None:
         return datetime.timedelta(**{unit: float(value) for unit, value in match.groupdict().items() if value is not None})
     else:
         return None
+
+def parse_now_string(s):
+
+    t = datetime.datetime.now()
+    
+    match = now_pattern.match(s)
+    if match is not None:
+        match_dict = match.groupdict()
+    else:
+        return t
+
+    if (match_dict['op'] is None) or (match_dict['dt'] is None):
+        return t
+    dt = parse_string_to_timedelta(match_dict['dt']) # ''.join(match_dict['dt'].split())
+    if dt is not None:
+        if match_dict['op'] == '+':
+            t = t + dt
+        elif match_dict['op'] == '-':
+            t = t - dt
+    return t
