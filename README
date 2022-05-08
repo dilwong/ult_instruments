@@ -1,3 +1,0 @@
-A library of software for controlling PNML ULT hardware, with an eye towards operating ULT remotely.  Hopefully, this library will expand with time to make that goal a reality.
-
-This library is compatible with Python 2.7 and LabVIEW 2010.  Although some programs are compatible with Python 3, this library is not compatible with Python 3 in general.

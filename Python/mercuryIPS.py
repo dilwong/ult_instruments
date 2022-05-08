@@ -21,9 +21,9 @@ class mercuryIPS:
         self.__listen_state__ = 0
         self.error_list = []
 
-    @atexit.register
-    def exit_handler():
-        self.close()
+        @atexit.register
+        def exit_handler():
+            self.close()
 
     def listen(self):
         def parse_value(value):
