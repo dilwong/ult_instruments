@@ -29,7 +29,7 @@ where MODULE_NAME is as follows:
 
 Not included in this package are the routines for automatically calling some of the above Python modules, such as "init_lockin()", "init_arduino()", "init_gate()", "init_triton()", "init_magnet()", and "init_temperature()".
 
-The LabVIEW subdirectory contains the following LabVIEW 2010 VIs:
+The LabVIEW subdirectory contains the following LabVIEW 2021 VIs:
 > 'alicat gas monitor.vi' : Plot the pressure on an Alicat gas flow meter.
 >
 > 'capacitance nav xyz.vi' and 'capacitance navigation.vi' : Engage the coarse motor, and plot the capacitance signal during tip-sample navigation.
