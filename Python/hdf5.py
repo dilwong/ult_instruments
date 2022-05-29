@@ -39,3 +39,4 @@ def saveBiasSpectroscopyasHDF5(filename, attributes, channels, data):
             time.sleep(0.1)
             continue
         break
+    return dataname
