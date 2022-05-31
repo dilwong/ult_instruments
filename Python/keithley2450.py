@@ -17,6 +17,7 @@ except:
 import socket
 import traceback
 import atexit
+import ast
 
 class keithley2450:
 
@@ -64,18 +65,17 @@ class keithley2450:
             else:
                 try:
                     listen_commands = listen_string.split()
-                    listen_args = '(' + ','.join(listen_commands[1:]) + ')'
+                    listenArgs = [ast.literal_eval(argument) for argument in listen_commands[1:]]
                     if listen_commands[0] in dir(self)[3:]:
                         try:
-                            result = None
-                            exec('result = self.' + listen_commands[0] + listen_args)
+                            result = getattr(self, listen_commands[0])(*listenArgs)
                             if result is not None:
                                 send_string = str(result) + '\n'
                                 conn.sendall(send_string.encode())
                             else:
                                 conn.sendall('NO DATA\n'.encode())
-                        except TypeError:
-                            conn.sendall('ERROR: TYPE ERROR\n'.encode())
+                        except (TypeError, AttributeError):
+                            conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                     else:
                         conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                 except Exception:

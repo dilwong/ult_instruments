@@ -5,7 +5,6 @@
 #
 # TO DO: Message boundaries for recv over TCP.
 
-from inspect import trace
 import serial
 import time
 try:
@@ -19,6 +18,7 @@ except:
 import atexit
 import socket
 import traceback
+import ast
 
 class keithley2400:
 
@@ -98,18 +98,17 @@ class keithley2400:
             try:
                 listen_string = self.queue.get()
                 listen_commands = listen_string.split()
-                listen_args = '(' + ','.join(listen_commands[1:]) + ')'
+                listenArgs = [ast.literal_eval(argument) for argument in listen_commands[1:]]
                 if listen_commands[0] in dir(self)[3:]:
                     try:
-                        result = None
-                        exec('result = self.' + listen_commands[0] + listen_args)
+                        result = getattr(self, listen_commands[0])(*listenArgs)
                         if result is not None:
                             send_string = str(result) + '\n'
                             self._conn.sendall(send_string.encode())
                         else:
                             self._conn.sendall('NO DATA\n'.encode())
-                    except TypeError:
-                        self._conn.sendall('ERROR: TYPE ERROR\n'.encode())
+                    except (TypeError, AttributeError):
+                        self._conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                 else:
                     self._conn.sendall('ERROR: COMMAND ERROR\n'.encode())
             except Exception:

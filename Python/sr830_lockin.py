@@ -22,11 +22,23 @@
 # n queries. Need to implement a way to clear read buffer before each
 # read command.
 
+# Python 2.7 compatible
+# Unknown Python 3 compatibility
+
 import visa
 import time
 import traceback
 import socket
-import thread
+try:
+    import thread
+except:
+    import _thread as thread
+import ast
+
+try:
+    long
+except NameError:
+    long = int
 
 class lockin:
 
@@ -60,7 +72,7 @@ class lockin:
         elif 0.005 < ampl <= 5:
             self.write('SLVL ' + str(ampl))
         else:
-            print 'ERROR: Amplitude out of bounds.'
+            print('ERROR: Amplitude out of bounds.')
 
     #Gets amplitude
     def get_amplitude(self):
@@ -71,7 +83,7 @@ class lockin:
         if 0.001 < freq <= 102000:
             self.write('FREQ ' + str(freq))
         else:
-            print 'ERROR: Frequency out of bounds.'
+            print('ERROR: Frequency out of bounds.')
 
     #Gets frequency
     def get_frequency(self):
@@ -82,15 +94,15 @@ class lockin:
         try:
             harm = int(harm) # Should not overwrite input
         except ValueError:
-            'ERROR: Harmonic not an integer.'
+            print('ERROR: Harmonic not an integer.')
             return
         if isinstance(harm,int):
             if 1 <= harm <= 19999:
                 self.write('HARM ' + str(harm))
             else:
-                print 'ERROR: Harmonic out of bounds.'
+                print('ERROR: Harmonic out of bounds.')
         else:
-            print 'ERROR: Harmonic not an integer.' # Redundant
+            print('ERROR: Harmonic not an integer.') # Redundant
 
     #Gets harmonic
     def get_harmonic(self):
@@ -101,7 +113,7 @@ class lockin:
         if -360 <= phase <= 729.99:
             self.write('PHAS ' + str(phase))
         else:
-            print 'ERROR: Phase out of bounds.'
+            print('ERROR: Phase out of bounds.')
 
     #Gets phase
     def get_phase(self):
@@ -126,29 +138,29 @@ class lockin:
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
             if value is None:
-                print 'SELECT TIME CONSTANT'
-                print '0 : 10us       10 : 1s'
-                print '1 : 30us       11 : 3s'
-                print '2 : 100us      12 : 10s'
-                print '3 : 300us      13 : 30s'
-                print '4 : 1ms        14 : 100s'
-                print '5 : 3ms        15 : 300s'
-                print '6 : 10ms       16 : 1ks'
-                print '7 : 30ms       17 : 3ks'
-                print '8 : 100ms      18 : 10ks'
-                print '9 : 300ms      19 : 30ks'
-                time_set = input()
+                print('SELECT TIME CONSTANT')
+                print('0 : 10us       10 : 1s')
+                print('1 : 30us       11 : 3s')
+                print('2 : 100us      12 : 10s')
+                print('3 : 300us      13 : 30s')
+                print('4 : 1ms        14 : 100s')
+                print('5 : 3ms        15 : 300s')
+                print('6 : 10ms       16 : 1ks')
+                print('7 : 30ms       17 : 3ks')
+                print('8 : 100ms      18 : 10ks')
+                print('9 : 300ms      19 : 30ks')
+                time_set = ast.literal_eval(input())
             else:
                 try:
                     time_set = int(value)
                 except ValueError:
-                    print "ERROR: Not an integer"
+                    print("ERROR: Not an integer")
             if isinstance(time_set,int) and (0 <= time_set <= 19):
                 inst = rm.open_resource(self.primary_id)
                 inst.write('OFLT ' + str(time_set))
                 inst.close()
             else:
-                print "Invalid Input: Must be integer between 0 and 19"
+                print("Invalid Input: Must be integer between 0 and 19")
         rm.close
 
     #Get time constant
@@ -188,33 +200,33 @@ class lockin:
         rm = visa.ResourceManager()
         if self.primary_id in rm.list_resources():
             if value is None:
-                print 'SELECT SENSITIVITY'
-                print '0  : 2nV        13 : 50uV'
-                print '1  : 5nV        14 : 100uV'
-                print '2  : 10nV       15 : 200uV'
-                print '3  : 20nV       16 : 500uV'
-                print '4  : 50nV       17 : 1mV'
-                print '5  : 100nV      18 : 2mV'
-                print '6  : 200nV      19 : 5mV'
-                print '7  : 500nV      20 : 10mV'
-                print '8  : 1uV        21 : 20mV'
-                print '9  : 2uV        22 : 50mV'
-                print '10 : 5uV        23 : 100mV'
-                print '11 : 10uV       24 : 200mV'
-                print '12 : 20uV       25 : 500mV'
-                print '                26 : 1V'
-                sens_set = input()
+                print('SELECT SENSITIVITY')
+                print('0  : 2nV        13 : 50uV')
+                print('1  : 5nV        14 : 100uV')
+                print('2  : 10nV       15 : 200uV')
+                print('3  : 20nV       16 : 500uV')
+                print('4  : 50nV       17 : 1mV')
+                print('5  : 100nV      18 : 2mV')
+                print('6  : 200nV      19 : 5mV')
+                print('7  : 500nV      20 : 10mV')
+                print('8  : 1uV        21 : 20mV')
+                print('9  : 2uV        22 : 50mV')
+                print('10 : 5uV        23 : 100mV')
+                print('11 : 10uV       24 : 200mV')
+                print('12 : 20uV       25 : 500mV')
+                print('                26 : 1V')
+                sens_set = ast.literal_eval(input())
             else:
                 try:
                     sens_set = int(value)
                 except ValueError:
-                    print "ERROR: Not an integer"
+                    print("ERROR: Not an integer")
             if isinstance(sens_set,int) and (0 <= sens_set <= 26):
                 inst = rm.open_resource(self.primary_id)
                 inst.write('SENS ' + str(sens_set))
                 inst.close()
             else:
-                print "Invalid Input: Must be integer between 0 and 26"
+                print("Invalid Input: Must be integer between 0 and 26")
         rm.close
 
     #Get time constant
@@ -275,12 +287,12 @@ class lockin:
     def set_offset(self, offset, channel = 1):
         # Always sets to no expand
         if not -100 <= offset <= 100:
-            print 'ERROR: Please set offset between -100 and 100% of full scale'
+            print('ERROR: Please set offset between -100 and 100% of full scale')
             return
         if (channel == 1) or (channel == 2):
             self.write('OEXP ' + str(channel) + ', ' + str(offset) + ', 0')
         else:
-            print 'ERROR: channel must be 1 or 2'
+            print('ERROR: channel must be 1 or 2')
             return
 
     # Get offset
@@ -289,7 +301,7 @@ class lockin:
             resp = self.read('OEXP ? ' + str(channel))
             return float(resp.split(',')[0])
         else:
-            print 'ERROR: channel must be 1 or 2'
+            print('ERROR: channel must be 1 or 2')
             return
 
     # TO DO: Eliminate code duplication
@@ -302,30 +314,31 @@ class lockin:
         s.listen(0)
         while self.__listen_flag__:
             conn, addr = s.accept()
-            listen_string = conn.recv(1024) # Possible rare bug: Needs to loop until \n is received
+            listen_string = conn.recv(1024).decode() # Possible rare bug: Needs to loop until \n is received
             if listen_string == 'QUIT\n':
                 s.close()
                 self.__listen_flag__ = False
             else:
                 try:
                     listen_commands = listen_string.split()
-                    listen_args = '(' + ','.join(listen_commands[1:]) + ')'
+                    listenArgs = [ast.literal_eval(argument) for argument in listen_commands[1:]]
                     if listen_commands[0] in dir(self)[3:]:
                         try:
-                            exec('result = self.' + listen_commands[0] + listen_args)
+                            result = getattr(self, listen_commands[0])(*listenArgs)
                             if result is not None:
-                                conn.sendall(str(result) + '\n')
+                                send_string = str(result) + '\n'
+                                conn.sendall(send_string.encode())
                             else:
-                                conn.sendall('NO DATA\n')
-                        except TypeError:
-                            conn.sendall('ERROR: TYPE ERROR\n')
+                                conn.sendall('NO DATA\n'.encode())
+                        except (TypeError, AttributeError):
+                            conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                     else:
-                        conn.sendall('ERROR: COMMAND ERROR\n')
+                        conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                 except Exception:
                     if len(self.error_list) < 21:
                         err = traceback.format_exc()
-                        print 'ERROR in START thread:'
-                        print err
+                        print('ERROR in START thread:')
+                        print(err)
                         self.error_list.append(err)
                     time.sleep(0.5)
 
@@ -339,5 +352,5 @@ class lockin:
         port = 65426
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((host, port))
-        s.sendall('QUIT\n')
+        s.sendall('QUIT\n'.encode())
         s.close()
