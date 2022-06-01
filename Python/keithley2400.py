@@ -71,19 +71,21 @@ class keithley2400:
             self.error_list.append(err)
         while self._listen_flag:
             try:
-                self._conn, self._addr = s.accept()
-                listen_string = self._conn.recv(1024).decode()
+                conn, _ = s.accept()
+                listen_string = conn.recv(1024).decode()
                 if 'QUIT' in listen_string:
-                    self._conn.sendall('OK\n'.encode())
+                    conn.sendall('OK\n'.encode())
+                    conn.close()
                     s.close()
                     self._listen_flag = False
                     break
                 elif 'HALT' in listen_string:
-                    self._conn.sendall('OK\n'.encode())
+                    conn.sendall('OK\n'.encode())
+                    conn.close()
                     time.sleep(0.05)
                     self._halt = True
                 else:
-                    self.queue.put(listen_string)
+                    self.queue.put((listen_string, conn))
             except Exception:
                 err = traceback.format_exc()
                 print('ERROR in LISTEN thread:')
@@ -96,7 +98,7 @@ class keithley2400:
     def _execute(self):
         while self._listen_flag:
             try:
-                listen_string = self.queue.get()
+                listen_string, conn = self.queue.get()
                 listen_commands = listen_string.split()
                 listenArgs = [ast.literal_eval(argument) for argument in listen_commands[1:]]
                 if listen_commands[0] in dir(self)[3:]:
@@ -104,13 +106,13 @@ class keithley2400:
                         result = getattr(self, listen_commands[0])(*listenArgs)
                         if result is not None:
                             send_string = str(result) + '\n'
-                            self._conn.sendall(send_string.encode())
+                            conn.sendall(send_string.encode())
                         else:
-                            self._conn.sendall('NO DATA\n'.encode())
+                            conn.sendall('NO DATA\n'.encode())
                     except (TypeError, AttributeError):
-                        self._conn.sendall('ERROR: COMMAND ERROR\n'.encode())
+                        conn.sendall('ERROR: COMMAND ERROR\n'.encode())
                 else:
-                    self._conn.sendall('ERROR: COMMAND ERROR\n'.encode())
+                    conn.sendall('ERROR: COMMAND ERROR\n'.encode())
             except Exception:
                 err = traceback.format_exc()
                 print('ERROR in EXECUTE thread:')
@@ -119,6 +121,11 @@ class keithley2400:
                 while len(self.error_list) > 20:
                     self.error_list.pop(0)
                 time.sleep(self._exception_time)
+            finally:
+                try:
+                    conn.close()
+                except:
+                    pass
 
     def set_increment(self, increment):
         if increment == 0:
@@ -131,6 +138,12 @@ class keithley2400:
             self.increment_time = self._default_increment_time
         else:
             self.increment_time = increment_time
+
+    def set_max_voltage(self, max_voltage):
+        self.MAXVOLTAGE = abs(max_voltage)
+
+    def get_max_voltage(self):
+        return self.MAXVOLTAGE
 
     def _stop_listen(self):
         self._listen_flag = False
