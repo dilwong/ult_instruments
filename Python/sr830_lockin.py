@@ -312,12 +312,12 @@ class lockin:
         self.lis_sock = s
         s.bind((host, port))
         s.listen(0)
-        while self.__listen_flag__:
+        while self._listen_flag:
             conn, addr = s.accept()
             listen_string = conn.recv(1024).decode() # Possible rare bug: Needs to loop until \n is received
             if listen_string == 'QUIT\n':
                 s.close()
-                self.__listen_flag__ = False
+                self._listen_flag = False
             else:
                 try:
                     listen_commands = listen_string.split()
@@ -344,7 +344,7 @@ class lockin:
 
     def start_listen(self):
         self.error_list = []
-        self.__listen_flag__ = True
+        self._listen_flag = True
         thread.start_new_thread(self.loop,())
 
     def stop_listen(self):

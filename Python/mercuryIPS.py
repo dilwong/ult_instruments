@@ -13,12 +13,12 @@ import atexit
 class mercuryIPS:
 
     def __init__(self, com_port = 'COM5'):
-        self.__power_supply__ = serial.Serial(com_port, 9600, timeout = 1)
+        self._power_supply = serial.Serial(com_port, 9600, timeout = 1)
         self.x = vectorDirection(self, 'X')
         self.y = vectorDirection(self, 'Y')
         self.z = vectorDirection(self, 'Z')
         self.on_flag = 1
-        self.__listen_state__ = 0
+        self._listen_state = 0
         self.error_list = []
 
         @atexit.register
@@ -31,7 +31,7 @@ class mercuryIPS:
                 return float(value)
             except:
                 return value
-        self.__listen_state__ = 1
+        self._listen_state = 1
         host = '127.0.0.1'
         port = 65242
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,10 +59,10 @@ class mercuryIPS:
                             print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
                             conn.sendall('ERROR: COMMAND ERROR. DIRECTION NOT X, Y, OR Z\n')
                         try:
-                            comm_to_exec = dir_obj.__commands__[listen_commands[1].lower()]
+                            comm_to_exec = dir_obj._commands[listen_commands[1].lower()]
                             if comm_to_exec.__name__ != listen_commands[1].lower():
                                 raise KeyError
-                            if comm_to_exec.im_self.__direction__ != listen_commands[0].upper():
+                            if comm_to_exec.im_self._direction != listen_commands[0].upper():
                                 raise KeyError
                         except KeyError:
                             print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
@@ -95,17 +95,17 @@ class mercuryIPS:
                         print(err)
                         self.error_list.append(err)
                     time.sleep(0.5)
-        self.__listen_state__ = 0
+        self._listen_state = 0
 
     def start_listen(self):
-        if self.__listen_state__ == 0:
+        if self._listen_state == 0:
             thread.start_new_thread(self.listen,())
         else:
             print("MAGNET LISTEN LOOP ALREADY RUNNING.")
 
     def query(self, command):
-        self.__power_supply__.write(command)
-        return self.__power_supply__.readline()
+        self._power_supply.write(command)
+        return self._power_supply.readline()
 
     def set(self, direction, command_abbrev):
         if direction.upper() not in ['X', 'Y', 'Z']: # direction is a string
@@ -142,7 +142,7 @@ class mercuryIPS:
 
     def close(self):
         self.on_flag = 0
-        self.__power_supply__.close()
+        self._power_supply.close()
         try:
             self.lis_sock.close()
         except:
@@ -202,9 +202,9 @@ class mercuryIPS:
 class vectorDirection:
 
     def __init__(self, IPS_instance, direction):
-        self.__IPS_instance__ = IPS_instance
-        self.__direction__ = direction
-        self.__commands__ = {"read_state": self.read_state, \
+        self._IPS_instance = IPS_instance
+        self._direction = direction
+        self._commands = {"read_state": self.read_state, \
                             "hold": self.hold, \
                             "ramp_to_set": self.ramp_to_set, \
                             "ramp_to_zero": self.ramp_to_zero, \
@@ -221,54 +221,54 @@ class vectorDirection:
                             "set_ramp_rate": self.set_ramp_rate}
 
     def read_state(self):
-        return self.__IPS_instance__.read_state(self.__direction__)
+        return self._IPS_instance.read_state(self._direction)
 
     def hold(self):
-        return self.__IPS_instance__.hold(self.__direction__)
+        return self._IPS_instance.hold(self._direction)
 
     def ramp_to_set(self):
-        return self.__IPS_instance__.ramp_to_set(self.__direction__)
+        return self._IPS_instance.ramp_to_set(self._direction)
 
     def ramp_to_zero(self):
-        return self.__IPS_instance__.ramp_to_zero(self.__direction__)
+        return self._IPS_instance.ramp_to_zero(self._direction)
 
     def read_switch_heater(self):
-        return self.__IPS_instance__.read_switch_heater(self.__direction__)
+        return self._IPS_instance.read_switch_heater(self._direction)
 
     def switch_heater_on(self):
-        return self.__IPS_instance__.switch_heater_on(self.__direction__)
+        return self._IPS_instance.switch_heater_on(self._direction)
 
     def switch_heater_off(self):
-        return self.__IPS_instance__.switch_heater_off(self.__direction__)
+        return self._IPS_instance.switch_heater_off(self._direction)
 
     def read_voltage(self):
-        return self.__IPS_instance__.read_voltage(self.__direction__)
+        return self._IPS_instance.read_voltage(self._direction)
 
     def read_current(self):
-        return self.__IPS_instance__.read_current(self.__direction__)
+        return self._IPS_instance.read_current(self._direction)
 
     def read_field(self):
-        return self.__IPS_instance__.read_field(self.__direction__)
+        return self._IPS_instance.read_field(self._direction)
 
     def read_persistent_field(self):
-        return self.__IPS_instance__.read_persistent_field(self.__direction__)
+        return self._IPS_instance.read_persistent_field(self._direction)
 
     def read_target_field(self):
-        return self.__IPS_instance__.read_target_field(self.__direction__)
+        return self._IPS_instance.read_target_field(self._direction)
 
     def set_target_field(self, value):
         if (type(value) != float) and (type(value) != int):
             raise magnetException('Input value is not a number')
-        if (self.__direction__ == 'X') or (self.__direction__ == 'X'):
+        if (self._direction == 'X') or (self._direction == 'X'):
             if abs(value) > 1:
                 raise magnetException('Exceeds field limit')
-        if self.__direction__ == 'Z':
+        if self._direction == 'Z':
             if abs(value) > 9:
                 raise magnetException('Exceeds field limit for Z for 9-1-1 T magnet')
-        return self.__IPS_instance__.set_target_field(self.__direction__, value)
+        return self._IPS_instance.set_target_field(self._direction, value)
 
     def read_ramp_rate(self):
-        return self.__IPS_instance__.read_ramp_rate(self.__direction__)
+        return self._IPS_instance.read_ramp_rate(self._direction)
 
     def set_ramp_rate(self, value):
         if (type(value) != float) and (type(value) != int):
@@ -280,7 +280,7 @@ class vectorDirection:
         else:
             if value > 0.1:
                 print('WARNING: RAMP RATE SET > 0.1 T/min')
-        return self.__IPS_instance__.set_ramp_rate(self.__direction__, value)
+        return self._IPS_instance.set_ramp_rate(self._direction, value)
 
 class magnetException(Exception):
 
