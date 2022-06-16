@@ -30,47 +30,55 @@ where MODULE_NAME is as follows:
 Not included in this package are the routines for automatically calling some of the above Python modules, such as "init_lockin()", "init_arduino()", "init_gate()", "init_triton()", "init_magnet()", and "init_temperature()".
 
 The LabVIEW subdirectory contains the following LabVIEW 2021 VIs:
-> 'alicat gas monitor.vi' : Plot the pressure on an Alicat gas flow meter.
+> 'alicat_gas_monitor.vi' : Plot the pressure on an Alicat gas flow meter.
 >
-> 'capacitance nav xyz.vi' and 'capacitance navigation.vi' : Engage the coarse motor, and plot the capacitance signal during tip-sample navigation.
+> 'CapacitanceNavigation.vi' and 'capacitance_navigation_xyz.vi' : Engage the coarse motor, and plot the capacitance signal during tip-sample navigation.
+>
+> 'clear_sts_attributes.vi' : Erase attributes in 'gate sts.vi' (which was renamed to 'GateSTS.vi').
 >
 > 'const_bias_conductance.vi' : Measure the gate-dependent conductance at a fixed sample bias.
 >
-> 'current monitor.vi' : Plot and record the STM tunneling current and power spectral density.
+> 'current_monitor.vi' : Plot and record the STM tunneling current and power spectral density.
 >
-> 'dilution walker.vi' : Similar to 'capacitance navigation.vi' except do not walk when the STM_RX or mixing chamber temperatures are too high.
+> 'DilutionWalker.vi' : Similar to 'CapacitanceNavigation.vi' except do not walk when the STM_RX or mixing chamber temperatures are too high.
 >
-> 'fridge night watcher.vi' : Monitors the 1K pot noise, and regulates the heat applied to the fixed impedance in order to keep the liquid helium level in the 1K pot constant.
+> 'DualGateSTS.vi' : Acquire 'Bias Spectroscopy' measurements as a function of two independent gate voltages. Calls 'GateSTS.vi'.
 >
-> 'gate current sweep.vi' : Measure the tunneling current as a function of the gate voltage.
+> 'FridgeNightWatcher.vi' : Monitors the 1K pot noise, and regulates the heat applied to the fixed impedance in order to keep the liquid helium level in the 1K pot constant.
 >
-> 'gate increment.vi' : Change the gate voltage incrementally.
+> 'GateCurrentSweep.vi' : Measure the tunneling current as a function of the gate voltage.
 >
-> 'gate sts with current adjustment.vi' : Similar to 'gate sts.vi' except adjust the initial setpoint current according to an input file.
+> 'GateIncrement.vi' : Change the gate voltage on a Keithley 2450 SourceMeter incrementally.
 >
-> 'gate sts.vi' : Acquire 'Bias Spectroscopy' measurements as a function of gate voltage.
+> 'GateSTSwithCurrentAdjustment.vi' : Similar to 'GateSTS.vi' except adjust the initial setpoint current according to an input file. This has not been updated to save to HDF5 file format.
+>
+> 'GateSTS.vi' : Acquire 'Bias Spectroscopy' measurements as a function of gate voltage.
 >
 > 'gate_controller.vi' : Controls the gate voltage by TPC/IP communicating with a Python process running the keithley2450.py module.
 >
-> 'ion pump controller.vi' : Measure the pressures in the TC and AC chambers through the ion pump current. Compatible with a Gamma Vacuum DIGITEL QPC ion pump controller.
+> 'ion_gauge_pressure.vi' : Read and graph the pressure from an Agilent XGS-600 ion gauge controller.
 >
-> 'lockin front panel.vi' : Friendly UI for controlling the SR830 lock-in amplifier.
+> 'IonPumpPressure.vi' : Measure the pressures in the TC and AC chambers through the ion pump current. Compatible with a Gamma Vacuum DIGITEL QPC ion pump controller.
+>
+> 'LockinFrontPanel.vi' : Friendly UI for controlling the SR830 lock-in amplifier.
 >
 > 'lockin_controller.vi' : Controls the SR830 lock-in amplifier by TCP/IP communicating with a Python process running the sr830_lockin.py module.
 >
 > 'magnet_controller.vi' : Controls the magnet power supply by TCP/IP communicating with a Python process running the mercuryIPS.py module.
 >
-> 'pressure gauge.vi' : Read and graph the pressure from an Agilent XGS-600 ion gauge controller.
+> 'raster_navigation.vi' : Raster scan the coarse motor, and make a 2D plot of the capacitance.
 >
-> 'raster navigation.vi' : Raster scan the coarse motor, and make a 2D plot of the capacitance.
+> 'scan_frame_to_tip.vi' : Move the Nanonis Scan Control scan frame to the current location of the tip.
 >
-> 'scan frame to tip.vi' : Move the Nanonis Scan Control scan frame to the current location of the tip.
+> 'second_gate_controller.vi' : Controls the gate voltage by TPC/IP communicating with a Python process running the keithley2400.py module.
+>
+> 'SecondGateIncrement.vi' : Change the gate voltage on a Keithley 2400 SourceMeter incrementally.
 >
 > 'temperature_watcher.vi' : Fetch insert temperatures/pressures through TCP/IP communication with a Python process running triton_monitor.py.
 >
 > 'triton_controller.vi' : Control and monitor the state of the dilution refrigerator through TCP/IP communication with a Python process running impedance_heater.py.
 >
-> 'walk tester.vi' : Test the STM coarse walker.
+> 'walker_tester.vi' : Test the STM coarse walker.
 
 The Arduino subdirectory contains a simple program for controlling the pins on an Arduino with an ATmega microcontroller. Although ultimately unused, the intended purpose was controlling the following devices:
 > FINDER 20.22.9.024.0000 General Purpose Relay
