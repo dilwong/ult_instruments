@@ -7,7 +7,7 @@ if __name__ == "__main__":
         requirements = [line.strip() for line in requirements if line.strip()]
 
     setuptools.setup(name = 'ult_instruments',
-    version = '3.2.5',
+    version = '3.2.6',
     author = 'Dillon Wong',
     author_email = '',
     description = 'Controls ULT instrumentation.',
