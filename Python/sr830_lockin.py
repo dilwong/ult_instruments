@@ -23,9 +23,13 @@
 # read command.
 
 # Python 2.7 compatible
-# Unknown Python 3 compatibility
+# Unknown Python 3 compatibility:
+#   Most functions appear to work in Python 3, but not everything is tested.
 
-import visa
+try:
+    import visa
+except:
+    import pyvisa as visa
 import time
 import traceback
 import socket
