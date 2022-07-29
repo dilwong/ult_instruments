@@ -22,7 +22,7 @@ import ast
 
 class keithley2400:
 
-    def __init__(self, com_port = 'COM3', max_voltage = 100, listen_port = None, increment = None):
+    def __init__(self, com_port = 'COM3', max_voltage = 100, listen_port = None, increment = None, read_before_write = True):
         self.keithley = serial.Serial(com_port, 9600, timeout = 1)
         self.lock = thread.allocate_lock()
         self.emergency_lock = 0
@@ -39,6 +39,7 @@ class keithley2400:
         self._header_error_time = 1
         self._exception_time = 0.5
         self._print = True
+        self._read_before_write = read_before_write
         
         if self.listen_port is not None:
             self._listen_flag = True
@@ -178,8 +179,14 @@ class keithley2400:
             while not self._halt:
                 if self.emergency_lock:
                     return
-                voltage = self.force_read_voltage()
-                if abs(num - voltage) < 1.1*increment:
+                if self._read_before_write:
+                    voltage = self.force_read_voltage()
+                else:
+                    try:
+                        voltage = next_voltage
+                    except NameError:
+                        voltage = self.force_read_voltage()
+                if abs(num - voltage) < 1.1 * increment:
                     self.force_set_voltage(num)
                     if self._print:
                         print('VOLTAGE: ' + str(self.force_read_voltage()) + ' V')
@@ -187,13 +194,15 @@ class keithley2400:
                         print('DONE')
                     break
                 elif voltage > num:
-                    self.force_set_voltage(voltage - increment)
+                    next_voltage = voltage - increment
+                    self.force_set_voltage(next_voltage)
                     if self._print:
                         print('VOLTAGE: ' + str(self.force_read_voltage()) + ' V')
                         print('CURRENT: ' + str(self.force_read_current()) + ' uA')
                     time.sleep(self.increment_time)
                 elif voltage < num:
-                    self.force_set_voltage(voltage + increment)
+                    next_voltage = voltage + increment
+                    self.force_set_voltage(next_voltage)
                     if self._print:
                         print('VOLTAGE: ' + str(self.force_read_voltage()) + ' V')
                         print('CURRENT: ' + str(self.force_read_current()) + ' uA')
