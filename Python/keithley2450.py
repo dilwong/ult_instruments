@@ -3,17 +3,23 @@
 # Uses Keithley's Test Script Processor, an Lua interpreter
 # Sets to source voltage and measure current
 #
-# Python 2.7 compatible
-# Unknown Python 3 compatibility
-#
 # TO DO: Message boundaries for recv over TCP.
+#
+# BUG: Run keithley2450.py and sr830_lockin.py in separate python instances.
+#      Running these two programs in the same python process triggers a
+#      "pyvisa.errors.InvalidSession: Invalid session handle. This resource might be closed." error.
 
-import visa
-import time
+try:
+    import visa
+except ModuleNotFoundError:
+    import pyvisa as visa
+
 try:
     import thread
-except:
+except ModuleNotFoundError:
     import _thread as thread
+
+import time
 import socket
 import traceback
 import atexit

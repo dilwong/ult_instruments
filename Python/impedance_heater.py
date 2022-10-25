@@ -3,17 +3,22 @@
 #will shut down the Keithley that controls the fixed impedance
 #heater.
 
-#Python 2 only
-#TO DO: Python 3 compatibility
-
-import thread
 import time
 import datetime
 import traceback
 import socket
 import winsound
-import Queue
 import atexit
+
+try:
+    import queue
+except ModuleNotFoundError:
+    import Queue as queue
+
+try:
+    import thread
+except ModuleNotFoundError:
+    import _thread as thread
 
 # Not a Singleton
 class impedance_heater:
@@ -26,7 +31,7 @@ class impedance_heater:
     def __init__(self, triton_monitor, heater_keithley, log_directory = None):
         self.triton_monitor = triton_monitor
         self.heater_keithley = heater_keithley
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
         self.lock = thread.allocate_lock()
         self.exception_list = []
         self.stall_procedure = None
@@ -43,10 +48,10 @@ class impedance_heater:
         self.stop = 0
         self.consecutive_except_num = 0
         self.temp_color_text = ''
-        self.onek_limit = float(raw_input('Enter MAXIMUM 1K pot temperature (K): '))
-        self.sorb_limit = float(raw_input('Enter MAXIMUM sorb temperature (K): '))
-        self.needle_limit = float(raw_input('Enter MAXIMUM needle valve temperature (K): '))
-        self.still_limit = float(raw_input('Enter MAXIMUM still pressure (mbar):'))
+        self.onek_limit = float(input('Enter MAXIMUM 1K pot temperature (K): '))
+        self.sorb_limit = float(input('Enter MAXIMUM sorb temperature (K): '))
+        self.needle_limit = float(input('Enter MAXIMUM needle valve temperature (K): '))
+        self.still_limit = float(input('Enter MAXIMUM still pressure (mbar):'))
         self.onek_alarm = 1.8 # T
         self.sorb_alarm = 1.8 # T
         self.condense_alarm = 185 # mbar
@@ -93,7 +98,7 @@ class impedance_heater:
                             while self.triton_monitor._unchanging and (not self.stop):
                                 time.sleep(20)
                                 time_since_unchange += 20
-                                print '\rTEMPERATURES HAVE NOT CHANGED IN THE LAST ' + str(int(time_since_unchange / 60)) + ' minutes.',
+                                print('\rTEMPERATURES HAVE NOT CHANGED IN THE LAST ' + str(int(time_since_unchange / 60)) + ' minutes.')
                                 self.annoying_sound()
                             if not self.stop:
                                 time.sleep(5)
@@ -120,7 +125,7 @@ class impedance_heater:
                     else:
                         print('IMPEDANCE HEATER IS OFF SINCE ' + off_datetime)
                         self.annoying_sound()
-                    print ''
+                    print('')
                     time.sleep(1)
                     self.consecutive_except_num = 0
                 except:
@@ -172,9 +177,9 @@ class impedance_heater:
 
             while True:
                 self.conn, self.addr = s.accept()
-                listen_string = self.conn.recv(1024)
+                listen_string = self.conn.recv(1024).decode()
                 if listen_string == 'QUIT':
-                    self.conn.sendall('Quitting...\n')
+                    self.conn.sendall('Quitting...\n'.encode())
                     s.close()
                     self.__class__.listening = False
                     return
@@ -201,50 +206,50 @@ class impedance_heater:
                     # not lock for temperature reads
                     self.heater_keithley.output_on()
                     self.heater_keithley.set_voltage(arg_numeric, 0.1)
-                    self.conn.sendall('Done\n')
+                    self.conn.sendall('Done\n'.encode())
                 elif arg_command == 'Read_Heater_Voltage': # What causes Error ID code -113 and -110
                     self.heater_keithley.output_on()
                     volt = str(self.heater_keithley.read_voltage())
-                    self.conn.sendall(volt + '\n')
+                    self.conn.sendall((volt + '\n').encode())
                 elif arg_command == 'Read_Heater_Current':
                     self.heater_keithley.output_on()
                     curr = str(self.heater_keithley.read_current())
-                    self.conn.sendall(curr + '\n')
+                    self.conn.sendall((curr + '\n').encode())
                 elif arg_command == 'Read_1K_Pot_Temperature':
                     temp = str(self.triton_monitor.onek_pot_temp)
-                    self.conn.sendall(temp + '\n')
+                    self.conn.sendall((temp + '\n').encode())
                 elif arg_command == 'Read_IVC_Sorb_Temperature':
                     temp = str(self.triton_monitor.sorb_temp)
-                    self.conn.sendall(temp + '\n')
+                    self.conn.sendall((temp + '\n').encode())
                 elif arg_command == 'Read_Needle_Valve_Temperature':
                     temp = str(self.triton_monitor.needle_valve_temp)
-                    self.conn.sendall(temp + '\n')
+                    self.conn.sendall((temp + '\n').encode())
                 elif arg_command == 'Read_Still_Pressure':
                     press = str(self.triton_monitor.still_pressure)
-                    self.conn.sendall(press + '\n')
+                    self.conn.sendall((press + '\n').encode())
                 elif arg_command == 'Read_Mixing_Chamber_Temperature':
                     press = str(self.triton_monitor.mix_chamber_temp)
-                    self.conn.sendall(press + '\n')
+                    self.conn.sendall((press + '\n').encode())
                 elif arg_command == 'Read_STM_RX_Temperature':
                     press = str(self.triton_monitor.stm_rx_temp)
-                    self.conn.sendall(press + '\n')
+                    self.conn.sendall((press + '\n').encode())
                 elif arg_command == 'Read_STM_CX_Temperature':
                     press = str(self.triton_monitor.stm_cx_temp)
-                    self.conn.sendall(press + '\n')
+                    self.conn.sendall((press + '\n').encode())
                 elif arg_command == 'Unstall_Triton_Loop':
                     self.heater_keithley.output_on()
                     self.unstall()
-                    self.conn.sendall('Done\n')
+                    self.conn.sendall('Done\n'.encode())
                 elif arg_command == 'Triton_Stop':
-                    self.conn.sendall('Done\n')
+                    self.conn.sendall('Done\n'.encode())
                     self.stop_loop()
                 elif arg_command == 'Triton_Stall_Status':
                     if not self.__class__.stalled:
-                        self.conn.sendall('NOT_STALLED\n')
+                        self.conn.sendall('NOT_STALLED\n'.encode())
                     else:
-                        self.conn.sendall('STALLED\n')
+                        self.conn.sendall('STALLED\n'.encode())
                 else:
-                    self.conn.sendall('Invalid Command\n')
+                    self.conn.sendall('Invalid Command\n'.encode())
                 print('COMMAND COMPLETE')
             except:
                 print(traceback.format_exc())
@@ -271,73 +276,3 @@ class impedance_heater:
             winsound.Beep(soundF,300)
         else:
             pass
-
-# Example of a stall procedure
-# Needs to be tested extensively!!!
-def restart_heater(impedance_heater):
-    # STAGE 1
-    print("'RESTART HEATER' STAGE 1")
-    first_stage_wait_minutes = 10
-    time.sleep(first_stage_wait_minutes * 60)
-    if impedance_heater.__class__.running == False:
-        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
-        impedance_heater.heater_keithley.run_to_zero()
-        return
-    if impedance_heater.__class__.stalled == False:
-        print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
-        return
-    impedance_heater.heater_keithley.set_voltage(4)
-    # STAGE 2
-    print("'RESTART HEATER' STAGE 2")
-    second_stage_wait_minutes = 2
-    second_stage_seconds_accumulator = 0
-    while float(second_stage_seconds_accumulator)/60.0 <= second_stage_wait_minutes:
-        second_stage_seconds_accumulator += 5
-        onek_pot_temperature = impedance_heater.triton_monitor.onek_pot_temp
-        sorb_temperature = impedance_heater.triton_monitor.sorb_temp
-        needle_valve_temperature = impedance_heater.triton_monitor.needle_valve_temp
-        still_pressure = impedance_heater.triton_monitor.still_pressure
-        if (onek_pot_temperature > impedance_heater.onek_limit) or \
-                (sorb_temperature > impedance_heater.sorb_limit) or \
-                (needle_valve_temperature > impedance_heater.needle_limit) or \
-                (still_pressure > impedance_heater.still_limit):
-            print('POT DRY.  RUNNING HEATER TO ZERO')
-            impedance_heater.heater_keithley.run_to_zero()
-            return
-        if impedance_heater.__class__.stalled == False:
-            print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
-            return
-        time.sleep(5)
-    if impedance_heater.__class__.running == False:
-        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
-        impedance_heater.heater_keithley.run_to_zero()
-        return
-    impedance_heater.heater_keithley.set_voltage(5.5)
-    # STAGE 3
-    print("'RESTART HEATER' STAGE 3")
-    third_stage_wait_minutes = 2
-    third_stage_seconds_accumulator = 0
-    while float(third_stage_seconds_accumulator)/60.0 <= third_stage_wait_minutes:
-        third_stage_seconds_accumulator += 5
-        onek_pot_temperature = impedance_heater.triton_monitor.onek_pot_temp
-        sorb_temperature = impedance_heater.triton_monitor.sorb_temp
-        needle_valve_temperature = impedance_heater.triton_monitor.needle_valve_temp
-        still_pressure = impedance_heater.triton_monitor.still_pressure
-        if (onek_pot_temperature > impedance_heater.onek_limit) or \
-                (sorb_temperature > impedance_heater.sorb_limit) or \
-                (needle_valve_temperature > impedance_heater.needle_limit) or \
-                (still_pressure > impedance_heater.still_limit):
-            print('POT DRY.  RUNNING HEATER TO ZERO')
-            impedance_heater.heater_keithley.run_to_zero()
-            return
-        if impedance_heater.__class__.stalled == False:
-            print("TRITON MONITOR NOT STALLED.  TERMINATING 'RESTART HEATER'")
-            return
-        time.sleep(5)
-    if impedance_heater.__class__.running == False:
-        print("TRITON MONITOR NOT RUNNING.  RUNNING TO ZERO AND TERMINATING 'RESTART HEATER'")
-        impedance_heater.heater_keithley.run_to_zero()
-        return
-    impedance_heater.heater_keithley.set_voltage(6.5)
-    print("UNSTALLING TRITON LOOP")
-    impedance_heater.__class__.stalled = False

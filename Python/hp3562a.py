@@ -1,7 +1,11 @@
 # HP 3562A DYNAMIC SIGNAL ANALYZER
 # GPIB VISA control
 
-import visa
+try:
+    import visa
+except ModuleNotFoundError:
+    import pyvisa as visa
+    
 import time
 import numpy as np
 

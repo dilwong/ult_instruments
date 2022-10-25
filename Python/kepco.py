@@ -1,9 +1,10 @@
 #Controls KEPCO BHK 2000-0.1MG high voltage power supply
 #For now, it only reads. It does not set voltage/current.
 
-# visa module is being depreciated in the future.
-# When it is depreciated, use 'import pyvisa as visa' instead.
-import visa
+try:
+    import visa
+except ModuleNotFoundError:
+    import pyvisa as visa
 
 class kepco:
 

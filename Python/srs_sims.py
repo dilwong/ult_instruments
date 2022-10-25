@@ -5,14 +5,11 @@ SIM980 Summing Amplifier
 SIM925 Octal 4-Wire Multiplexer
 
 NOT FULLY IMPLEMENTED YET!!!
-
-Tested in Python 2.7
-Not tested in Python 3, but might work fine.
 """
 
 try:
     import pyvisa as visa
-except:
+except ModuleNotFoundError:
     import visa
 
 try:

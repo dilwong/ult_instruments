@@ -1,20 +1,21 @@
 # keithley2400.py
 # Controls Keithley 2400 SourceMeter through RS232
-# Python 2.7 compatible
-# Unsure if this module works in Python 3
 #
 # TO DO: Message boundaries for recv over TCP.
 
 import serial
 import time
+
 try:
     import thread
-except:
+except ModuleNotFoundError:
     import _thread as thread
+
 try:
     import Queue
-except:
+except ModuleNotFoundError:
     import queue as Queue
+
 import atexit
 import socket
 import traceback
@@ -36,7 +37,7 @@ class keithley2400:
         self.increment = increment
         self.increment_time = self._default_increment_time
         
-        self._header_error_time = 1
+        self._header_error_time = 0.1
         self._exception_time = 0.5
         self._print = True
         self._read_before_write = read_before_write
@@ -128,6 +129,12 @@ class keithley2400:
                 except:
                     pass
 
+    def write(self, command):
+        self.keithley.write(command.encode())
+
+    def readline(self):
+        return self.keithley.readline().decode()
+    
     def set_increment(self, increment):
         if increment == 0:
             self.increment = self._default_increment
@@ -157,8 +164,8 @@ class keithley2400:
     
     def force_set_voltage(self, num):
         if -self.MAXVOLTAGE <= num <= self.MAXVOLTAGE:
-            self.keithley.write(':SOUR:VOLT:LEV ' + str(num) + '\n')
-            self.keithley.write(':SYST:KEY 23\n')
+            self.write(':SOUR:VOLT:LEV ' + str(num) + '\n')
+            self.write(':SYST:KEY 23\n')
         else:
             print('For safety, I cannot allow voltages greater than ' + str(self.MAXVOLTAGE) + ' V.')
 
@@ -211,7 +218,7 @@ class keithley2400:
             raise
         finally:
             try:
-                self.keithley.write(':SYST:KEY 23\n')
+                self.write(':SYST:KEY 23\n')
             except:
                 pass
             finally:
@@ -222,11 +229,11 @@ class keithley2400:
         counter = 0
         while True:
             try:
-                self.keithley.write('\n')
-                self.keithley.write(':READ?\n')
-                meas_array = self.keithley.readline()
+                self.write('\n')
+                self.write(':READ?\n')
+                meas_array = self.readline()
                 voltage = float(meas_array.split(',')[0])
-                self.keithley.write(':SYST:KEY 23\n')
+                self.write(':SYST:KEY 23\n')
                 break
             except (ValueError, IndexError):
                 print('HEADER ERROR DETECTED: ' + meas_array)
@@ -251,11 +258,11 @@ class keithley2400:
         counter = 0
         while True:
             try:
-                self.keithley.write('\n')
-                self.keithley.write(':READ?\n')
-                meas_array = self.keithley.readline()
+                self.write('\n')
+                self.write(':READ?\n')
+                meas_array = self.readline()
                 current = float(meas_array.split(',')[1])*1E6
-                self.keithley.write(':SYST:KEY 23\n')
+                self.write(':SYST:KEY 23\n')
                 break
             except (ValueError, IndexError):
                 print('HEADER ERROR DETECTED: ' + meas_array)
@@ -293,7 +300,7 @@ class keithley2400:
                     self.force_set_voltage(voltage + 0.1)
                     time.sleep(0.01)
                 voltage = self.force_read_voltage()
-            self.keithley.write(':SYST:KEY 23\n')
+            self.write(':SYST:KEY 23\n')
             print('Run to 0 V complete.')
             print('Keithley SourceMeter output is now 0 V.')
         except:
@@ -305,8 +312,8 @@ class keithley2400:
     def output_on(self):
         self.lock.acquire()
         try:
-            self.keithley.write('OUTPUT ON\n')
-            self.keithley.write(':SYST:KEY 23\n')
+            self.write('OUTPUT ON\n')
+            self.write(':SYST:KEY 23\n')
         except:
             raise
         finally:
@@ -315,8 +322,8 @@ class keithley2400:
     def output_off(self):
         self.lock.acquire()
         try:
-            self.keithley.write('OUTPUT OFF\n')
-            self.keithley.write(':SYST:KEY 23\n')
+            self.write('OUTPUT OFF\n')
+            self.write(':SYST:KEY 23\n')
         except:
             raise
         finally:

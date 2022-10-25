@@ -7,27 +7,25 @@ The Python modules in the Python subdirectory can be imported via
 from ult_instruments import MODULE_NAME
 ```
 where MODULE_NAME is as follows:
-> triton_monitor.py : Monitors the state (pressures, temperatures) of the dilution refrigerator. Compatible with Python 2.7 and 3.
+> triton_monitor.py : Monitors the state (pressures, temperatures) of the dilution refrigerator.
 >
-> sr830_lockin.py : Controls a Stanford Research Systems SR830 lock-in amplifier. Compatible with Python 2.7.
+> sr830_lockin.py : Controls a Stanford Research Systems SR830 lock-in amplifier.
 >
-> keithley2400.py : Controls a Keithley 2400 SourceMeter. Compatible with Python 2.7. Untested in Python 3.
+> keithley2400.py : Controls a Keithley 2400 SourceMeter.
 >
-> keithley2450.py : Controls a Keithley 2450 SourceMeter. Compatible with Python 2.7.
+> keithley2450.py : Controls a Keithley 2450 SourceMeter.
 >
-> impedance_heater.py : Monitors and regulates the applied heat to the 2 kOhm resistor attached to the fixed impedance that feeds the 1K pot. Compatible with Python 2.7. Windows only.
+> impedance_heater.py : Monitors and regulates the applied heat to the 2 kOhm resistor attached to the fixed impedance that feeds the 1K pot. Windows only.
 >
-> fridge_plot.py : Depreciated. Use triton_monitor.plot_temperature instead.
+> mercuryIPS.py : Controls the Oxford Instruments Mercury IPS magnet power supply.
 >
-> mercuryIPS.py : Controls the Oxford Instruments Mercury IPS magnet power supply. Compatible with Python 2.7. Possibly compatible with Python 3, but untested.
->
-> delta_es150.py : Controls a Delta Elektronika ES150 Series DC power supply. Compatible with Python 2.7. Possibly compatible with Python 3, but untested.
+> delta_es150.py : Controls a Delta Elektronika ES150 Series DC power supply.
 > 
-> kepco.py : Controls a KEPCO BHK 2000-0.1MG high-voltage power supply. Currently only reads the state of the high-voltag power supply but cannot set the state. Compatible with Python 2.7, with unknown compatibility with Python 3.
+> kepco.py : Controls a KEPCO BHK 2000-0.1MG high-voltage power supply. Currently only reads the state of the high-voltag power supply but cannot set the state.
 >
-> hp3562a.py : Controls a Hewlett Packard 3562A dual-channel, dynamic signal analyzer. Note that the HP 3562A predates the IEEE 754 floating-point standard. Compatible with Python 3. Possibly compatible with Python 2.7
+> hp3562a.py : Controls a Hewlett Packard 3562A dual-channel, dynamic signal analyzer. Note that the HP 3562A predates the IEEE 754 floating-point standard.
 
-Not included in this package are the routines for automatically calling some of the above Python modules, such as "init_lockin()", "init_arduino()", "init_gate()", "init_triton()", "init_magnet()", and "init_temperature()".
+Not included in this package are the routines for automatically calling some of the above Python modules, such as "init_lockin()", "init_arduino()", "init_gate()", "init_triton()", "init_magnet()", and "init_temperature()". Compatibility with Python 2.7 was dropped in version 4.0.0.
 
 The LabVIEW subdirectory contains the following LabVIEW 2021 VIs:
 > 'alicat_gas_monitor.vi' : Plot the pressure on an Alicat gas flow meter.
@@ -79,12 +77,3 @@ The LabVIEW subdirectory contains the following LabVIEW 2021 VIs:
 > 'triton_controller.vi' : Control and monitor the state of the dilution refrigerator through TCP/IP communication with a Python process running impedance_heater.py.
 >
 > 'walker_tester.vi' : Test the STM coarse walker.
-
-The Arduino subdirectory contains a simple program for controlling the pins on an Arduino with an ATmega microcontroller. Although ultimately unused, the intended purpose was controlling the following devices:
-> FINDER 20.22.9.024.0000 General Purpose Relay
->
-> SONGLE SRD-05VDC-SL-C PCB Relay
->
-> Omron Electronics G6AK-274P-ST-US-DC5 Latching Electromagnetic Relay
->
-> TDK-Lambda DSP10-24 Rail Power Supply

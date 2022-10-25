@@ -6,13 +6,13 @@ import socket
 import traceback
 try:
     import thread
-except:
-    import _thread
+except ModuleNotFoundError:
+    import _thread as thread
 import atexit
 
 class mercuryIPS:
 
-    def __init__(self, com_port = 'COM5'):
+    def __init__(self, com_port = 'COM6'):
         self._power_supply = serial.Serial(com_port, 9600, timeout = 1)
         self.x = vectorDirection(self, 'X')
         self.y = vectorDirection(self, 'Y')
@@ -40,7 +40,7 @@ class mercuryIPS:
         s.listen(0)
         while self.on_flag:
             conn, addr = s.accept()
-            listen_string = conn.recv(1024)
+            listen_string = conn.recv(1024).decode()
             if listen_string == 'QUIT':
                 s.close()
             else:
@@ -57,16 +57,16 @@ class mercuryIPS:
                             dir_obj = self.z
                         else:
                             print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
-                            conn.sendall('ERROR: COMMAND ERROR. DIRECTION NOT X, Y, OR Z\n')
+                            conn.sendall('ERROR: COMMAND ERROR. DIRECTION NOT X, Y, OR Z\n'.encode())
                         try:
                             comm_to_exec = dir_obj._commands[listen_commands[1].lower()]
                             if comm_to_exec.__name__ != listen_commands[1].lower():
                                 raise KeyError
-                            if comm_to_exec.im_self._direction != listen_commands[0].upper():
+                            if comm_to_exec.__self__._direction != listen_commands[0].upper():
                                 raise KeyError
                         except KeyError:
                             print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
-                            conn.sendall('ERROR: COMMAND ERROR. COMMAND NOT RECOGNIZED\n')
+                            conn.sendall('ERROR: COMMAND ERROR. COMMAND NOT RECOGNIZED\n'.encode())
                         try:
                             args_list = [parse_value(val) for val in listen_commands[2:]]
                             result = None
@@ -76,18 +76,18 @@ class mercuryIPS:
                             print("\tCOMMAND: " + listen_commands[1].lower())
                             print("\tARGUMENTS: " + ' '.join(listen_commands[2:]))
                             if result is None:
-                                conn.sendall('NO DATA\n')
+                                conn.sendall('NO DATA\n'.encode())
                             else:
-                                conn.sendall(str(result) + '\n')
+                                conn.sendall((str(result) + '\n').encode())
                         except TypeError:
                             print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
-                            conn.sendall('ERROR: COMMAND ERROR. WRONG NUMBER OF ARGUMENTS\n')
+                            conn.sendall('ERROR: COMMAND ERROR. WRONG NUMBER OF ARGUMENTS\n'.encode())
                         except magnetException as e:
                             print("LISTEN COMMAND ERROR. MAGNET EXCEPTION DETECTED.")
-                            conn.sendall('ERROR: MAGNET EXCEPTION: ' + str(e) + '\n')
+                            conn.sendall(('ERROR: MAGNET EXCEPTION: ' + str(e) + '\n').encode())
                     else:
                         print("LISTEN COMMAND MALFORMED. IGNORING COMMAND.")
-                        conn.sendall('ERROR: COMMAND ERROR. NEEDS LINE FEED\n')
+                        conn.sendall('ERROR: COMMAND ERROR. NEEDS LINE FEED\n'.encode())
                     dir_obj = None
                 except Exception:
                     if len(self.error_list) < 21:
@@ -104,8 +104,8 @@ class mercuryIPS:
             print("MAGNET LISTEN LOOP ALREADY RUNNING.")
 
     def query(self, command):
-        self._power_supply.write(command)
-        return self._power_supply.readline()
+        self._power_supply.write(command.encode())
+        return self._power_supply.readline().decode()
 
     def set(self, direction, command_abbrev):
         if direction.upper() not in ['X', 'Y', 'Z']: # direction is a string

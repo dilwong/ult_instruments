@@ -22,22 +22,24 @@
 # n queries. Need to implement a way to clear read buffer before each
 # read command.
 
-# Python 2.7 compatible
-# Unknown Python 3 compatibility:
-#   Most functions appear to work in Python 3, but not everything is tested.
+# BUG: Run keithley2450.py and sr830_lockin.py in separate python instances.
+#      Running these two programs in the same python process triggers a
+#      "pyvisa.errors.InvalidSession: Invalid session handle. This resource might be closed." error.
 
 try:
     import visa
-except:
+except ModuleNotFoundError:
     import pyvisa as visa
+
 import time
 import traceback
 import socket
+import ast
+
 try:
     import thread
-except:
+except ModuleNotFoundError:
     import _thread as thread
-import ast
 
 try:
     long
